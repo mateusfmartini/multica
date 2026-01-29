@@ -30,6 +30,7 @@
     "@mariozechner/pi-agent-core": "^0.50.3",
     "@mariozechner/pi-ai": "^0.50.3",
     "@mariozechner/pi-coding-agent": "^0.50.3",
+    "@sinclair/typebox": "^0.34.41",
     "@nestjs/common": "^11.1.12",
     "@nestjs/core": "^11.1.12",
     "@nestjs/platform-express": "^11.1.12",
