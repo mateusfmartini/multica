@@ -8,7 +8,7 @@ export { registerProfileIpcHandlers } from './profile.js'
 
 import { registerAgentIpcHandlers, cleanupAgent } from './agent.js'
 import { registerSkillsIpcHandlers } from './skills.js'
-import { registerHubIpcHandlers, cleanupHub, initializeHub, setupDeviceConfirmation } from './hub.js'
+import { registerHubIpcHandlers, cleanupHub, initializeHub } from './hub.js'
 import { registerProfileIpcHandlers } from './profile.js'
 
 /**
