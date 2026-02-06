@@ -236,8 +236,8 @@ export function ChatView({
       <footer className="container px-4 pb-3 pt-1">
         <ChatInput
           onSubmit={sendMessage}
-          disabled={isLoading || !!error}
-          placeholder={error ? "Connection error" : "Ask your Agent..."}
+          disabled={isLoading || (!!error && error.code !== 'AGENT_ERROR')}
+          placeholder={error && error.code !== 'AGENT_ERROR' ? "Connection error" : "Ask your Agent..."}
         />
       </footer>
     </div>
