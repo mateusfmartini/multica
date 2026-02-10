@@ -55,7 +55,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // APP_ROOT points to apps/desktop (two levels up from out/main/)
 process.env.APP_ROOT = path.join(__dirname, '../..')
 
-export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
+// electron-vite uses ELECTRON_RENDERER_URL for dev server
+export const VITE_DEV_SERVER_URL = process.env['ELECTRON_RENDERER_URL']
 // electron-vite outputs to out/ directory
 export const MAIN_DIST = path.join(__dirname)
 export const RENDERER_DIST = path.join(__dirname, '../renderer')

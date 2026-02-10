@@ -18,18 +18,10 @@ export default defineConfig({
     },
   },
   renderer: {
-    root: '.',
-    build: {
-      rollupOptions: {
-        input: {
-          index: path.resolve(__dirname, 'index.html'),
-        },
-      },
-    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, 'src'),
+        '@': path.resolve(__dirname, 'src/renderer/src'),
       },
     },
   },
