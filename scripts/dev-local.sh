@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 #
-# Local development: Gateway (with Telegram bot) + Desktop
+# Local development: Gateway (with Telegram bot) + Desktop + Web (for login)
 #
 # Usage:
 #   pnpm dev:local
 #
 # Reads TELEGRAM_BOT_TOKEN from .env at the repo root.
-# Gateway runs in long-polling mode (no TELEGRAM_WEBHOOK_URL needed).
-# Desktop connects to the local Gateway at http://localhost:3000.
+# Gateway runs on port 4000 in long-polling mode (no TELEGRAM_WEBHOOK_URL needed).
+# Web app runs on port 3000 (default) for OAuth login flow.
+# Desktop connects to the local Gateway and uses local Web for login.
 
 set -euo pipefail
 
@@ -32,19 +33,22 @@ if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
 fi
 
 echo "Starting local dev environment..."
-echo "  Gateway:  http://localhost:3000 (Telegram long-polling mode)"
-echo "  Desktop:  connecting to local Gateway"
+echo "  Gateway:  http://localhost:4000 (Telegram long-polling mode)"
+echo "  Web:      http://localhost:3000 (OAuth login)"
+echo "  Desktop:  connecting to local Gateway + Web"
 echo ""
 
 # Build shared packages first
 pnpm turbo build --filter=@multica/types --filter=@multica/utils --filter=@multica/core
 
 # Start everything
+# Gateway uses PORT=4000 to avoid conflict with Web app on port 3000
 exec pnpm concurrently \
-  -n types,utils,core,gateway,desktop \
-  -c blue,green,yellow,magenta,cyan \
+  -n types,utils,core,gateway,web,desktop \
+  -c blue,green,yellow,magenta,red,cyan \
   "pnpm --filter @multica/types dev" \
   "pnpm --filter @multica/utils dev" \
   "pnpm --filter @multica/core dev" \
-  "pnpm --filter @multica/gateway dev" \
-  "GATEWAY_URL=http://localhost:3000 pnpm --filter @multica/desktop dev"
+  "PORT=4000 pnpm --filter @multica/gateway dev" \
+  "pnpm --filter @multica/web dev" \
+  "GATEWAY_URL=http://localhost:4000 MAIN_VITE_WEB_URL=http://localhost:3000 pnpm --filter @multica/desktop dev"
