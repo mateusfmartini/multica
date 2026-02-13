@@ -244,6 +244,11 @@ export function resetSubagentRegistryForTests(): void {
   stopSweeper();
 }
 
+/** Seed a run record directly (for testing). Bypasses persistence and side effects. */
+export function seedSubagentRunForTests(record: SubagentRunRecord): void {
+  subagentRuns.set(record.runId, record);
+}
+
 // ============================================================================
 // Lifecycle watching
 // ============================================================================

@@ -115,9 +115,14 @@ function acquireLockSync(filePath: string): () => void {
 // Paths
 // ============================================================
 
+export interface AuthStoreOptions {
+  /** Override the base directory (defaults to DATA_DIR). Useful for testing. */
+  baseDir?: string;
+}
+
 /** Resolve the auth profile store file path */
-export function resolveAuthStorePath(): string {
-  return join(DATA_DIR, AUTH_PROFILE_STORE_FILENAME);
+export function resolveAuthStorePath(options?: AuthStoreOptions): string {
+  return join(options?.baseDir ?? DATA_DIR, AUTH_PROFILE_STORE_FILENAME);
 }
 
 // ============================================================
@@ -148,8 +153,8 @@ export function coerceStore(raw: unknown): AuthProfileStore {
 }
 
 /** Ensure the store file exists on disk (creates it if missing) */
-export function ensureAuthStoreFile(): string {
-  const storePath = resolveAuthStorePath();
+export function ensureAuthStoreFile(options?: AuthStoreOptions): string {
+  const storePath = resolveAuthStorePath(options);
   const dir = dirname(storePath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -161,8 +166,8 @@ export function ensureAuthStoreFile(): string {
 }
 
 /** Load auth profile store from disk. Returns empty store if file doesn't exist. */
-export function loadAuthProfileStore(): AuthProfileStore {
-  const storePath = resolveAuthStorePath();
+export function loadAuthProfileStore(options?: AuthStoreOptions): AuthProfileStore {
+  const storePath = resolveAuthStorePath(options);
   if (!existsSync(storePath)) return createEmptyStore();
 
   try {
@@ -174,8 +179,8 @@ export function loadAuthProfileStore(): AuthProfileStore {
 }
 
 /** Save auth profile store to disk */
-export function saveAuthProfileStore(store: AuthProfileStore): void {
-  const storePath = resolveAuthStorePath();
+export function saveAuthProfileStore(store: AuthProfileStore, options?: AuthStoreOptions): void {
+  const storePath = resolveAuthStorePath(options);
   const dir = dirname(storePath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
@@ -191,24 +196,25 @@ export function saveAuthProfileStore(store: AuthProfileStore): void {
  */
 export function updateAuthProfileStore(
   updater: (store: AuthProfileStore) => void,
+  options?: AuthStoreOptions,
 ): AuthProfileStore {
-  const storePath = ensureAuthStoreFile();
+  const storePath = ensureAuthStoreFile(options);
 
   try {
     const release = acquireLockSync(storePath);
     try {
-      const store = loadAuthProfileStore();
+      const store = loadAuthProfileStore(options);
       updater(store);
-      saveAuthProfileStore(store);
+      saveAuthProfileStore(store, options);
       return store;
     } finally {
       release();
     }
   } catch {
     // Fallback: unlocked update (better than losing the write entirely)
-    const store = loadAuthProfileStore();
+    const store = loadAuthProfileStore(options);
     updater(store);
-    saveAuthProfileStore(store);
+    saveAuthProfileStore(store, options);
     return store;
   }
 }

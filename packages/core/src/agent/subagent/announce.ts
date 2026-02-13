@@ -38,8 +38,11 @@ export function buildSubagentSystemPrompt(params: SubagentSystemPromptParams): s
 /**
  * Read the latest assistant reply from a session's JSONL file.
  */
-export function readLatestAssistantReply(sessionId: string): string | undefined {
-  const entries = readEntries(sessionId);
+export function readLatestAssistantReply(
+  sessionId: string,
+  options?: { baseDir?: string },
+): string | undefined {
+  const entries = readEntries(sessionId, options);
   let latestToolResultText: string | undefined;
 
   // Walk backwards to find the last non-empty assistant reply.
