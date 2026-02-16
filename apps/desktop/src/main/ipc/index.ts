@@ -11,7 +11,6 @@ export { registerCronIpcHandlers } from './cron.js'
 export { registerHeartbeatIpcHandlers } from './heartbeat.js'
 export { registerAppStateIpcHandlers } from './app-state.js'
 export { registerAuthHandlers, setMainWindow as setAuthMainWindow, handleAuthDeepLink } from './auth.js'
-export { registerSubagentsIpcHandlers } from './subagents.js'
 
 import { registerAgentIpcHandlers, cleanupAgent } from './agent.js'
 import { registerAuthHandlers } from './auth.js'
@@ -23,7 +22,6 @@ import { registerChannelsIpcHandlers } from './channels.js'
 import { registerCronIpcHandlers } from './cron.js'
 import { registerHeartbeatIpcHandlers } from './heartbeat.js'
 import { registerAppStateIpcHandlers } from './app-state.js'
-import { registerSubagentsIpcHandlers } from './subagents.js'
 
 /**
  * Register all IPC handlers.
@@ -40,7 +38,6 @@ export function registerAllIpcHandlers(): void {
   registerHeartbeatIpcHandlers()
   registerAppStateIpcHandlers()
   registerAuthHandlers()
-  registerSubagentsIpcHandlers()
 }
 
 /**
