@@ -267,10 +267,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task) (TaskResult, error) {
 		return TaskResult{}, fmt.Errorf("no agent configured for provider %q", provider)
 	}
 
-	workdir, err := ResolveTaskWorkdir(d.cfg.ReposRoot, task.Context.Issue.Repository)
-	if err != nil {
-		return TaskResult{}, err
-	}
+	workdir := ResolveTaskWorkdir(d.cfg.ReposRoot)
 
 	prompt := BuildPrompt(task, workdir)
 

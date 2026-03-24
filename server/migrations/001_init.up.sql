@@ -65,7 +65,6 @@ CREATE TABLE issue (
     parent_issue_id UUID REFERENCES issue(id) ON DELETE SET NULL,
     acceptance_criteria JSONB NOT NULL DEFAULT '[]',
     context_refs JSONB NOT NULL DEFAULT '[]',
-    repository JSONB,
     position FLOAT NOT NULL DEFAULT 0,
     due_date TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

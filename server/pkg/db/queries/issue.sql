@@ -16,9 +16,9 @@ INSERT INTO issue (
     workspace_id, title, description, status, priority,
     assignee_type, assignee_id, creator_type, creator_id,
     parent_issue_id, acceptance_criteria, context_refs,
-    repository, position
+    position
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 ) RETURNING *;
 
 -- name: UpdateIssue :one
@@ -33,7 +33,6 @@ UPDATE issue SET
     due_date = sqlc.narg('due_date'),
     acceptance_criteria = COALESCE(sqlc.narg('acceptance_criteria'), acceptance_criteria),
     context_refs = COALESCE(sqlc.narg('context_refs'), context_refs),
-    repository = COALESCE(sqlc.narg('repository'), repository),
     updated_at = now()
 WHERE id = $1
 RETURNING *;

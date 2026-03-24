@@ -28,7 +28,6 @@ type IssueResponse struct {
 	ParentIssueID      *string `json:"parent_issue_id"`
 	AcceptanceCriteria []any   `json:"acceptance_criteria"`
 	ContextRefs        []any   `json:"context_refs"`
-	Repository         any     `json:"repository"`
 	Position           float64 `json:"position"`
 	DueDate            *string `json:"due_date"`
 	CreatedAt          string  `json:"created_at"`
@@ -58,11 +57,6 @@ func issueToResponse(i db.Issue) IssueResponse {
 		cr = []any{}
 	}
 
-	var repo any
-	if i.Repository != nil {
-		json.Unmarshal(i.Repository, &repo)
-	}
-
 	return IssueResponse{
 		ID:                 uuidToString(i.ID),
 		WorkspaceID:        uuidToString(i.WorkspaceID),
@@ -77,7 +71,6 @@ func issueToResponse(i db.Issue) IssueResponse {
 		ParentIssueID:      uuidToPtr(i.ParentIssueID),
 		AcceptanceCriteria: ac,
 		ContextRefs:        cr,
-		Repository:         repo,
 		Position:           i.Position,
 		DueDate:            timestampToPtr(i.DueDate),
 		CreatedAt:          timestampToString(i.CreatedAt),
@@ -163,7 +156,6 @@ type CreateIssueRequest struct {
 	ParentIssueID      *string `json:"parent_issue_id"`
 	AcceptanceCriteria []any   `json:"acceptance_criteria"`
 	ContextRefs        []any   `json:"context_refs"`
-	Repository         any     `json:"repository"`
 }
 
 func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
@@ -206,11 +198,6 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 	if req.ContextRefs == nil {
 		cr = []byte("[]")
 	}
-	var repo []byte
-	if req.Repository != nil {
-		repo, _ = json.Marshal(req.Repository)
-	}
-
 	var assigneeType pgtype.Text
 	var assigneeID pgtype.UUID
 	if req.AssigneeType != nil {
@@ -238,7 +225,6 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		ParentIssueID:      parentIssueID,
 		AcceptanceCriteria: ac,
 		ContextRefs:        cr,
-		Repository:         repo,
 		Position:           0,
 	})
 	if err != nil {
@@ -285,7 +271,6 @@ type UpdateIssueRequest struct {
 	DueDate            *string  `json:"due_date"`
 	AcceptanceCriteria *[]any   `json:"acceptance_criteria"`
 	ContextRefs        *[]any   `json:"context_refs"`
-	Repository         *any     `json:"repository"`
 }
 
 func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
@@ -343,10 +328,6 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	if req.ContextRefs != nil {
 		cr, _ := json.Marshal(*req.ContextRefs)
 		params.ContextRefs = cr
-	}
-	if req.Repository != nil {
-		repo, _ := json.Marshal(*req.Repository)
-		params.Repository = repo
 	}
 
 	// Nullable fields — only override when explicitly present in JSON

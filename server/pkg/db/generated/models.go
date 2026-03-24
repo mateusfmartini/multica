@@ -139,7 +139,6 @@ type Issue struct {
 	ParentIssueID      pgtype.UUID        `json:"parent_issue_id"`
 	AcceptanceCriteria []byte             `json:"acceptance_criteria"`
 	ContextRefs        []byte             `json:"context_refs"`
-	Repository         []byte             `json:"repository"`
 	Position           float64            `json:"position"`
 	DueDate            pgtype.Timestamptz `json:"due_date"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`

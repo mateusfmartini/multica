@@ -2,8 +2,6 @@ package daemon
 
 import (
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -20,21 +18,13 @@ func TestNormalizeServerBaseURL(t *testing.T) {
 	}
 }
 
-func TestResolveTaskWorkdirUsesRepoPathWhenPresent(t *testing.T) {
+func TestResolveTaskWorkdirReturnsRoot(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	repoPath := filepath.Join(root, "repo")
-	if err := os.Mkdir(repoPath, 0o755); err != nil {
-		t.Fatalf("mkdir repo: %v", err)
-	}
-
-	got, err := ResolveTaskWorkdir(root, &RepoRef{Path: "repo"})
-	if err != nil {
-		t.Fatalf("ResolveTaskWorkdir returned error: %v", err)
-	}
-	if got != repoPath {
-		t.Fatalf("expected %s, got %s", repoPath, got)
+	got := ResolveTaskWorkdir(root)
+	if got != root {
+		t.Fatalf("expected %s, got %s", root, got)
 	}
 }
 

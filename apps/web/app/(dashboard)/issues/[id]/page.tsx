@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronRight,
-  GitBranch,
   Link2,
   Pencil,
   Send,
@@ -267,110 +266,6 @@ function ContextRefsEditor({
         />
       </form>
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Repository Editor
-// ---------------------------------------------------------------------------
-
-function RepositoryEditor({
-  repository,
-  onUpdate,
-}: {
-  repository: { url: string; branch?: string; path?: string } | null;
-  onUpdate: (updates: Partial<UpdateIssueRequest>) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [url, setUrl] = useState("");
-  const [branch, setBranch] = useState("");
-  const [path, setPath] = useState("");
-
-  const handleOpen = (v: boolean) => {
-    if (v) {
-      setUrl(repository?.url ?? "");
-      setBranch(repository?.branch ?? "");
-      setPath(repository?.path ?? "");
-    }
-    setOpen(v);
-  };
-
-  const save = () => {
-    if (!url.trim()) {
-      onUpdate({ repository: null });
-    } else {
-      onUpdate({
-        repository: {
-          url: url.trim(),
-          branch: branch.trim() || undefined,
-          path: path.trim() || undefined,
-        },
-      });
-    }
-    setOpen(false);
-  };
-
-  const clear = () => {
-    onUpdate({ repository: null });
-    setOpen(false);
-  };
-
-  return (
-    <Popover open={open} onOpenChange={handleOpen}>
-      <PopoverTrigger className="flex items-center gap-1.5 cursor-pointer rounded px-1 -mx-1 hover:bg-accent/30 transition-colors">
-        {repository ? (
-          <>
-            <GitBranch className="h-3 w-3 shrink-0 text-muted-foreground" />
-            <span className="truncate text-xs">{repository.branch ?? "main"}</span>
-          </>
-        ) : (
-          <span className="text-muted-foreground text-xs">None</span>
-        )}
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto min-w-48 p-3 space-y-2.5">
-        <div className="text-xs font-medium">Repository</div>
-        <div className="space-y-2">
-          <Input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://github.com/org/repo"
-            className="text-xs"
-            autoFocus
-          />
-          <Input
-            value={branch}
-            onChange={(e) => setBranch(e.target.value)}
-            placeholder="Branch"
-            className="text-xs"
-          />
-          <Input
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-            placeholder="Path"
-            className="text-xs"
-          />
-        </div>
-        <div className="flex items-center justify-between pt-1">
-          {repository && (
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={clear}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              Remove
-            </Button>
-          )}
-          <Button
-            size="xs"
-            onClick={save}
-            className="ml-auto"
-          >
-            Save
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
   );
 }
 
@@ -710,10 +605,6 @@ export default function IssueDetailPage({
 
             <PropRow label="Due date">
               <DueDatePicker dueDate={issue.due_date} onUpdate={handleUpdateField} />
-            </PropRow>
-
-            <PropRow label="Repository">
-              <RepositoryEditor repository={issue.repository} onUpdate={handleUpdateField} />
             </PropRow>
 
             <PropRow label="Created by">

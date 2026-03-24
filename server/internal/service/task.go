@@ -266,12 +266,6 @@ func buildContextSnapshot(issue db.Issue, agent db.Agent, runtime db.AgentRuntim
 	if issue.ContextRefs != nil {
 		json.Unmarshal(issue.ContextRefs, &cr)
 	}
-	var repo *protocol.RepoRef
-	if issue.Repository != nil {
-		repo = &protocol.RepoRef{}
-		json.Unmarshal(issue.Repository, repo)
-	}
-
 	var tools any
 	if agent.Tools != nil {
 		json.Unmarshal(agent.Tools, &tools)
@@ -288,7 +282,6 @@ func buildContextSnapshot(issue db.Issue, agent db.Agent, runtime db.AgentRuntim
 			"description":         issue.Description.String,
 			"acceptance_criteria": ac,
 			"context_refs":        cr,
-			"repository":          repo,
 		},
 		"agent": map[string]any{
 			"id":     util.UUIDToString(agent.ID),
@@ -418,11 +411,6 @@ func issueToMap(issue db.Issue) map[string]any {
 		cr = []any{}
 	}
 
-	var repo any
-	if issue.Repository != nil {
-		json.Unmarshal(issue.Repository, &repo)
-	}
-
 	return map[string]any{
 		"id":                  util.UUIDToString(issue.ID),
 		"workspace_id":        util.UUIDToString(issue.WorkspaceID),
@@ -437,7 +425,6 @@ func issueToMap(issue db.Issue) map[string]any {
 		"parent_issue_id":     util.UUIDToPtr(issue.ParentIssueID),
 		"acceptance_criteria": ac,
 		"context_refs":        cr,
-		"repository":          repo,
 		"position":            issue.Position,
 		"due_date":            util.TimestampToPtr(issue.DueDate),
 		"created_at":          util.TimestampToString(issue.CreatedAt),

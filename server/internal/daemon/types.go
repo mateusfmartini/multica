@@ -58,7 +58,6 @@ type IssueContext struct {
 	Description        string   `json:"description"`
 	AcceptanceCriteria []string `json:"acceptance_criteria"`
 	ContextRefs        []string `json:"context_refs"`
-	Repository         *RepoRef `json:"repository"`
 }
 
 // AgentContext holds agent details for task execution.
@@ -74,13 +73,6 @@ type RuntimeContext struct {
 	Name       string `json:"name"`
 	Provider   string `json:"provider"`
 	DeviceInfo string `json:"device_info"`
-}
-
-// RepoRef points to a repository for an issue.
-type RepoRef struct {
-	URL    string `json:"url"`
-	Branch string `json:"branch"`
-	Path   string `json:"path"`
 }
 
 // TaskResult is the outcome of executing a task.

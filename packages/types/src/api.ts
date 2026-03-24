@@ -12,7 +12,6 @@ export interface CreateIssueRequest {
   parent_issue_id?: string;
   acceptance_criteria?: string[];
   context_refs?: string[];
-  repository?: { url: string; branch?: string; path?: string };
 }
 
 export interface UpdateIssueRequest {
@@ -26,7 +25,6 @@ export interface UpdateIssueRequest {
   due_date?: string | null;
   acceptance_criteria?: string[];
   context_refs?: string[];
-  repository?: { url: string; branch?: string; path?: string } | null;
 }
 
 export interface ListIssuesParams {

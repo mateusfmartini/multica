@@ -25,11 +25,6 @@ export interface Issue {
   parent_issue_id: string | null;
   acceptance_criteria: string[];
   context_refs: string[];
-  repository: {
-    url: string;
-    branch?: string;
-    path?: string;
-  } | null;
   position: number;
   due_date: string | null;
   created_at: string;

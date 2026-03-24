@@ -16,14 +16,6 @@ type TaskDispatchPayload struct {
 	Description        string   `json:"description"`
 	AcceptanceCriteria []string `json:"acceptance_criteria"`
 	ContextRefs        []string `json:"context_refs"`
-	Repository         *RepoRef `json:"repository,omitempty"`
-}
-
-// RepoRef points to a code repository.
-type RepoRef struct {
-	URL    string `json:"url"`
-	Branch string `json:"branch,omitempty"`
-	Path   string `json:"path,omitempty"`
 }
 
 // TaskProgressPayload is sent from daemon to server during task execution.

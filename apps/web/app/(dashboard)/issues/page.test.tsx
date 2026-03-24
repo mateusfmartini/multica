@@ -61,7 +61,6 @@ const issueDefaults = {
   parent_issue_id: null,
   acceptance_criteria: [],
   context_refs: [],
-  repository: null,
   position: 0,
 };
 

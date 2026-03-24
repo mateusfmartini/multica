@@ -2,8 +2,6 @@ package daemon
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -41,20 +39,6 @@ func BuildPrompt(task Task, workdir string) string {
 		b.WriteString("\n")
 	}
 
-	if repo := task.Context.Issue.Repository; repo != nil {
-		b.WriteString("Repository context:\n")
-		if repo.URL != "" {
-			fmt.Fprintf(&b, "- url: %s\n", repo.URL)
-		}
-		if repo.Branch != "" {
-			fmt.Fprintf(&b, "- branch: %s\n", repo.Branch)
-		}
-		if repo.Path != "" {
-			fmt.Fprintf(&b, "- path: %s\n", repo.Path)
-		}
-		b.WriteString("\n")
-	}
-
 	if task.Context.WorkspaceContext != "" {
 		b.WriteString("Workspace context:\n")
 		b.WriteString(task.Context.WorkspaceContext)
@@ -76,24 +60,6 @@ func BuildPrompt(task Task, workdir string) string {
 }
 
 // ResolveTaskWorkdir determines the working directory for a task.
-func ResolveTaskWorkdir(reposRoot string, repo *RepoRef) (string, error) {
-	base := reposRoot
-	if repo == nil || strings.TrimSpace(repo.Path) == "" {
-		return base, nil
-	}
-
-	path := strings.TrimSpace(repo.Path)
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(base, path)
-	}
-	path = filepath.Clean(path)
-
-	info, err := os.Stat(path)
-	if err != nil {
-		return "", fmt.Errorf("repository path not found: %s", path)
-	}
-	if !info.IsDir() {
-		return "", fmt.Errorf("repository path is not a directory: %s", path)
-	}
-	return path, nil
+func ResolveTaskWorkdir(reposRoot string) string {
+	return reposRoot
 }
