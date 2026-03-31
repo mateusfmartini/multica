@@ -1,4 +1,5 @@
 import * as React from 'react'
+import Link from 'next/link'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
@@ -58,8 +59,21 @@ function createComponents(
   const baseComponents: Partial<Components> = {
     // Links: Make clickable with callbacks, or render as mention
     a: ({ href, children }) => {
-      // Mention links: mention://member/id or mention://agent/id
+      // Mention links: mention://member/id, mention://agent/id, mention://issue/id
       if (href?.startsWith('mention://')) {
+        const mentionMatch = href.match(/^mention:\/\/(member|agent|issue)\/(.+)$/)
+        if (mentionMatch?.[1] === 'issue') {
+          const issueId = mentionMatch[2]
+          return (
+            <Link
+              href={`/issues/${issueId}`}
+              className="text-primary font-medium cursor-pointer hover:underline"
+              style={{ background: 'color-mix(in srgb, var(--primary) 8%, transparent)', padding: '0 0.2em', borderRadius: 'calc(var(--radius) * 0.5)' }}
+            >
+              {children}
+            </Link>
+          )
+        }
         return (
           <span
             className="text-primary font-medium"

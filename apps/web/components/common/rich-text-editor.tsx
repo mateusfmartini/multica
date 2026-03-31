@@ -87,15 +87,17 @@ const MentionExtension = Mention.configure({
   suggestion: createMentionSuggestion(),
 }).extend({
   renderHTML({ node, HTMLAttributes }) {
+    const type = node.attrs.type ?? "member";
+    const label = node.attrs.label ?? node.attrs.id;
     return [
       "a",
       {
         ...HTMLAttributes,
-        href: `mention://${node.attrs.type ?? "member"}/${node.attrs.id}`,
-        "data-mention-type": node.attrs.type ?? "member",
+        href: `mention://${type}/${node.attrs.id}`,
+        "data-mention-type": type,
         "data-mention-id": node.attrs.id,
       },
-      `@${node.attrs.label ?? node.attrs.id}`,
+      type === "issue" ? label : `@${label}`,
     ];
   },
   addAttributes() {
@@ -105,14 +107,21 @@ const MentionExtension = Mention.configure({
         default: "member",
         parseHTML: (el: HTMLElement) => el.getAttribute("data-mention-type") ?? "member",
       },
+      description: {
+        default: null,
+        parseHTML: (el: HTMLElement) => el.getAttribute("data-mention-description"),
+      },
     };
   },
   addStorage() {
     return {
       markdown: {
         serialize(state: { write: (s: string) => void }, node: { attrs: { label?: string; type?: string; id?: string } }) {
+          const type = node.attrs.type ?? "member";
+          const label = node.attrs.label ?? node.attrs.id;
+          const display = type === "issue" ? label : `@${label}`;
           state.write(
-            `[@${node.attrs.label ?? node.attrs.id}](mention://${node.attrs.type ?? "member"}/${node.attrs.id})`,
+            `[${display}](mention://${type}/${node.attrs.id})`,
           );
         },
         parse: {},
