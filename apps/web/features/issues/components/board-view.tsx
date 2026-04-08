@@ -43,7 +43,7 @@ function InfiniteScrollSentinel({ onVisible, loading }: { onVisible: () => void;
     const node = sentinelRef.current;
     if (!node) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) onVisibleRef.current(); },
+      ([entry]) => { if (entry?.isIntersecting) onVisibleRef.current(); },
       { rootMargin: "100px" },
     );
     observer.observe(node);
