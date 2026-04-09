@@ -13,15 +13,19 @@ import { useViewStore } from "@multica/core/issues/stores/view-store-context";
 import { useIssueSelectionStore } from "@multica/core/issues/stores/selection-store";
 import { sortIssues } from "../utils/sort";
 import { StatusIcon } from "./status-icon";
-import { ListRow } from "./list-row";
+import { ListRow, type ChildProgress } from "./list-row";
 import { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
+
+const EMPTY_PROGRESS_MAP = new Map<string, ChildProgress>();
 
 export function ListView({
   issues,
   visibleStatuses,
+  childProgressMap = EMPTY_PROGRESS_MAP,
 }: {
   issues: Issue[];
   visibleStatuses: IssueStatus[];
+  childProgressMap?: Map<string, ChildProgress>;
 }) {
   const sortBy = useViewStore((s) => s.sortBy);
   const sortDirection = useViewStore((s) => s.sortDirection);
@@ -133,7 +137,7 @@ export function ListView({
                 {statusIssues.length > 0 ? (
                   <>
                     {statusIssues.map((issue) => (
-                      <ListRow key={issue.id} issue={issue} />
+                      <ListRow key={issue.id} issue={issue} childProgress={childProgressMap.get(issue.id)} />
                     ))}
                     {status === "done" && hasMore && (
                       <InfiniteScrollSentinel onVisible={loadMore} loading={loadingMore} />

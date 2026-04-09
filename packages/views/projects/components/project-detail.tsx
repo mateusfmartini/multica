@@ -97,6 +97,22 @@ function ProjectIssuesTab({ projectIssues }: { projectIssues: Issue[] }) {
     [projectIssues, statusFilters, priorityFilters, assigneeFilters, includeNoAssignee, creatorFilters],
   );
 
+  const childProgressMap = useMemo(() => {
+    const map = new Map<string, { done: number; total: number }>();
+    for (const issue of projectIssues) {
+      if (!issue.parent_issue_id) continue;
+      const entry = map.get(issue.parent_issue_id);
+      const isDone = issue.status === "done" || issue.status === "cancelled";
+      if (entry) {
+        entry.total++;
+        if (isDone) entry.done++;
+      } else {
+        map.set(issue.parent_issue_id, { done: isDone ? 1 : 0, total: 1 });
+      }
+    }
+    return map;
+  }, [projectIssues]);
+
   const visibleStatuses = useMemo(() => {
     if (statusFilters.length > 0)
       return BOARD_STATUSES.filter((s) => statusFilters.includes(s));
@@ -145,9 +161,10 @@ function ProjectIssuesTab({ projectIssues }: { projectIssues: Issue[] }) {
           visibleStatuses={visibleStatuses}
           hiddenStatuses={hiddenStatuses}
           onMoveIssue={handleMoveIssue}
+          childProgressMap={childProgressMap}
         />
       ) : (
-        <ListView issues={issues} visibleStatuses={visibleStatuses} />
+        <ListView issues={issues} visibleStatuses={visibleStatuses} childProgressMap={childProgressMap} />
       )}
     </div>
   );

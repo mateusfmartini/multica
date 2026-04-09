@@ -83,58 +83,7 @@ import { useModalStore } from "@multica/core/modals";
 import { timeAgo } from "@multica/core/utils";
 import { cn } from "@multica/ui/lib/utils";
 
-/**
- * Tiny circular progress ring used in the "Sub-issue of …" line and the
- * Sub-issues section header. Renders an open ring when in-progress and
- * fills to a solid arc when complete.
- */
-function ProgressRing({
-  done,
-  total,
-  size = 12,
-}: {
-  done: number;
-  total: number;
-  size?: number;
-}) {
-  const stroke = 1.5;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const ratio = total > 0 ? Math.min(done / total, 1) : 0;
-  const offset = circumference * (1 - ratio);
-  const isComplete = total > 0 && done >= total;
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      className={isComplete ? "text-info" : "text-primary"}
-      aria-hidden="true"
-    >
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke="currentColor"
-        strokeOpacity="0.25"
-        strokeWidth={stroke}
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={stroke}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-    </svg>
-  );
-}
+import { ProgressRing } from "./progress-ring";
 
 function shortDate(date: string | null): string {
   if (!date) return "—";
