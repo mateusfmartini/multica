@@ -25,6 +25,7 @@ UPDATE workspace SET
     settings = COALESCE(sqlc.narg('settings'), settings),
     repos = COALESCE(sqlc.narg('repos'), repos),
     issue_prefix = COALESCE(sqlc.narg('issue_prefix'), issue_prefix),
+    custom_env = COALESCE(sqlc.narg('custom_env'), custom_env),
     updated_at = now()
 WHERE id = $1
 RETURNING *;

@@ -1,0 +1,1 @@
+ALTER TABLE workspace ADD COLUMN custom_env JSONB NOT NULL DEFAULT '{}';
