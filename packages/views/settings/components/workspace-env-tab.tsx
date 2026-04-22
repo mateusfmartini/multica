@@ -52,10 +52,13 @@ function entriesToEnvMap(entries: EnvEntry[]): Record<string, string> {
 
 export function WorkspaceEnvTab() {
   const workspace = useCurrentWorkspace();
-  const member = useCurrentMember();
+  const wsId = useWorkspaceId();
+  const user = useAuthStore((s) => s.user);
+  const { data: members = [] } = useQuery(memberListOptions(wsId));
   const qc = useQueryClient();
 
-  const readOnly = !member || member.role === "member";
+  const currentMember = members.find((m) => m.user_id === user?.id) ?? null;
+  const readOnly = !currentMember || currentMember.role === "member";
   const wsEnv = workspace?.custom_env ?? {};
 
   const [envEntries, setEnvEntries] = useState<EnvEntry[]>(

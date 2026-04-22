@@ -1,4 +1,4 @@
-import type { Issue, IssueStatus, IssuePriority, IssueAssigneeType } from "./issue";
+import type { Issue, IssuePriority, IssueAssigneeType } from "./issue";
 import type { MemberRole } from "./workspace";
 import type { Project } from "./project";
 
@@ -6,12 +6,13 @@ import type { Project } from "./project";
 export interface CreateIssueRequest {
   title: string;
   description?: string;
-  status?: IssueStatus;
+  status?: string;
   priority?: IssuePriority;
   assignee_type?: IssueAssigneeType;
   assignee_id?: string;
   parent_issue_id?: string;
   project_id?: string;
+  pipeline_id?: string;
   due_date?: string;
   attachment_ids?: string[];
 }
@@ -19,7 +20,7 @@ export interface CreateIssueRequest {
 export interface UpdateIssueRequest {
   title?: string;
   description?: string;
-  status?: IssueStatus;
+  status?: string;
   priority?: IssuePriority;
   assignee_type?: IssueAssigneeType | null;
   assignee_id?: string | null;
@@ -27,18 +28,20 @@ export interface UpdateIssueRequest {
   due_date?: string | null;
   parent_issue_id?: string | null;
   project_id?: string | null;
+  pipeline_id?: string | null;
 }
 
 export interface ListIssuesParams {
   limit?: number;
   offset?: number;
   workspace_id?: string;
-  status?: IssueStatus;
+  status?: string;
   priority?: IssuePriority;
   assignee_id?: string;
   assignee_ids?: string[];
   creator_id?: string;
   project_id?: string;
+  pipeline_id?: string;
   open_only?: boolean;
 }
 
@@ -60,7 +63,7 @@ export interface IssueStatusBucket {
  * `api.listIssues` responses by the query functions in `issues/queries.ts`.
  */
 export interface ListIssuesCache {
-  byStatus: Partial<Record<IssueStatus, IssueStatusBucket>>;
+  byStatus: Partial<Record<string, IssueStatusBucket>>;
 }
 
 export interface SearchIssueResult extends Issue {

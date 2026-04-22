@@ -16,7 +16,7 @@ import {
 } from "./cache-helpers";
 import { useWorkspaceId } from "../hooks";
 import { useRecentIssuesStore } from "./stores";
-import type { Issue, IssueReaction, IssueStatus } from "../types";
+import type { Issue, IssueReaction } from "../types";
 import type {
   CreateIssueRequest,
   UpdateIssueRequest,
@@ -50,7 +50,7 @@ export type ToggleIssueReactionVars = {
  * latter).
  */
 export function useLoadMoreByStatus(
-  status: IssueStatus,
+  status: string,
   myIssues?: { scope: string; filter: MyIssuesFilter },
 ) {
   const qc = useQueryClient();

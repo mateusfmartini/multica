@@ -193,6 +193,10 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus, analytics
 					r.Route("/pipelines/{pipelineId}", func(r chi.Router) {
 						r.Get("/", h.GetPipeline)
 						r.Get("/columns", h.ListPipelineColumns)
+						r.With(middleware.RequireWorkspaceRoleFromURL(queries, "id", "owner", "admin")).Patch("/", h.UpdatePipeline)
+						r.With(middleware.RequireWorkspaceRoleFromURL(queries, "id", "owner", "admin")).Delete("/", h.DeletePipeline)
+						r.With(middleware.RequireWorkspaceRoleFromURL(queries, "id", "owner", "admin")).Post("/set-default", h.SetDefaultPipeline)
+						r.With(middleware.RequireWorkspaceRoleFromURL(queries, "id", "owner", "admin")).Put("/columns", h.SyncPipelineColumns)
 					})
 				})
 				// Admin-level access
@@ -203,12 +207,6 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus, analytics
 					r.Post("/members", h.CreateInvitation)
 					r.Put("/column-configs/{status}", h.UpsertColumnConfig)
 					r.Post("/pipelines", h.CreatePipeline)
-					r.Route("/pipelines/{pipelineId}", func(r chi.Router) {
-						r.Patch("/", h.UpdatePipeline)
-						r.Delete("/", h.DeletePipeline)
-						r.Post("/set-default", h.SetDefaultPipeline)
-						r.Put("/columns", h.SyncPipelineColumns)
-					})
 					r.Route("/members/{memberId}", func(r chi.Router) {
 						r.Patch("/", h.UpdateMember)
 						r.Delete("/", h.DeleteMember)

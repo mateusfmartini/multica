@@ -50,3 +50,17 @@ export const STATUS_CONFIG: Record<
   blocked: { label: "Blocked", iconColor: "text-destructive", hoverBg: "hover:bg-destructive/10", dividerColor: "bg-destructive", badgeBg: "bg-destructive", badgeText: "text-white", columnBg: "bg-destructive/5" },
   cancelled: { label: "Cancelled", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent", dividerColor: "bg-muted-foreground/40", badgeBg: "bg-muted", badgeText: "text-muted-foreground", columnBg: "bg-muted/40" },
 };
+
+const FALLBACK_STATUS_CONFIG = {
+  label: "Unknown",
+  iconColor: "text-muted-foreground",
+  hoverBg: "hover:bg-accent",
+  dividerColor: "bg-muted-foreground/40",
+  badgeBg: "bg-muted",
+  badgeText: "text-muted-foreground",
+  columnBg: "bg-muted/40",
+};
+
+export function getStatusConfig(status: string) {
+  return STATUS_CONFIG[status as IssueStatus] ?? FALLBACK_STATUS_CONFIG;
+}

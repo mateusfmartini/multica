@@ -60,6 +60,7 @@ import {
   useIssuesScopeStore,
   type IssuesScope,
 } from "@multica/core/issues/stores/issues-scope-store";
+import { PipelinePicker } from "./pickers";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
 import type { Issue } from "@multica/core/types";
 
@@ -383,6 +384,7 @@ function ProjectSubContent({
 export function IssuesHeader({ scopedIssues }: { scopedIssues: Issue[] }) {
   const scope = useIssuesScopeStore((s) => s.scope);
   const setScope = useIssuesScopeStore((s) => s.setScope);
+  const wsId = useWorkspaceId();
 
   const viewMode = useViewStore((s) => s.viewMode);
   const statusFilters = useViewStore((s) => s.statusFilters);
@@ -438,6 +440,7 @@ export function IssuesHeader({ scopedIssues }: { scopedIssues: Issue[] }) {
             <TooltipContent side="bottom">{s.description}</TooltipContent>
           </Tooltip>
         ))}
+        {viewMode === "board" && <PipelinePicker wsId={wsId} />}
       </div>
 
       {/* Right: filter + display + view toggle */}

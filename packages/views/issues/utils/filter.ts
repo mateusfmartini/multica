@@ -26,7 +26,7 @@ export function filterIssues(issues: Issue[], filters: IssueFilters): Issue[] {
   const hasProjectFilter = projectFilters.length > 0 || includeNoProject;
 
   return issues.filter((issue) => {
-    if (statusFilters.length > 0 && !statusFilters.includes(issue.status))
+    if (statusFilters.length > 0 && !statusFilters.includes(issue.status as IssueStatus))
       return false;
 
     if (priorityFilters.length > 0 && !priorityFilters.includes(issue.priority))

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { IssueStatus, UpdateIssueRequest } from "@multica/core/types";
-import { ALL_STATUSES, STATUS_CONFIG } from "@multica/core/issues/config";
+import type { UpdateIssueRequest } from "@multica/core/types";
+import { ALL_STATUSES, getStatusConfig } from "@multica/core/issues/config";
 import { StatusIcon } from "../status-icon";
 import { PropertyPicker, PickerItem } from "./property-picker";
 
@@ -14,19 +14,24 @@ export function StatusPicker({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   align,
+  pipelineColumns,
 }: {
-  status: IssueStatus;
+  status: string;
   onUpdate: (updates: Partial<UpdateIssueRequest>) => void;
   trigger?: React.ReactNode;
   triggerRender?: React.ReactElement;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   align?: "start" | "center" | "end";
+  pipelineColumns?: { status_key: string; label: string }[];
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
-  const cfg = STATUS_CONFIG[status];
+  const cfg = getStatusConfig(status);
+
+  const items = pipelineColumns
+    ?? ALL_STATUSES.map((s) => ({ status_key: s, label: getStatusConfig(s).label }));
 
   return (
     <PropertyPicker
@@ -44,20 +49,20 @@ export function StatusPicker({
         )
       }
     >
-      {ALL_STATUSES.map((s) => {
-        const c = STATUS_CONFIG[s];
+      {items.map((item) => {
+        const c = getStatusConfig(item.status_key);
         return (
           <PickerItem
-            key={s}
-            selected={s === status}
+            key={item.status_key}
+            selected={item.status_key === status}
             hoverClassName={c.hoverBg}
             onClick={() => {
-              onUpdate({ status: s });
+              onUpdate({ status: item.status_key });
               setOpen(false);
             }}
           >
-            <StatusIcon status={s} className="h-3.5 w-3.5" />
-            <span>{c.label}</span>
+            <StatusIcon status={item.status_key} className="h-3.5 w-3.5" />
+            <span>{item.label}</span>
           </PickerItem>
         );
       })}

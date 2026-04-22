@@ -57,6 +57,7 @@ export interface IssueViewState {
   sortDirection: SortDirection;
   cardProperties: CardProperties;
   listCollapsedStatuses: IssueStatus[];
+  activePipelineId: string | null;
   setViewMode: (mode: ViewMode) => void;
   toggleStatusFilter: (status: IssueStatus) => void;
   togglePriorityFilter: (priority: IssuePriority) => void;
@@ -72,6 +73,7 @@ export interface IssueViewState {
   setSortDirection: (dir: SortDirection) => void;
   toggleCardProperty: (key: keyof CardProperties) => void;
   toggleListCollapsed: (status: IssueStatus) => void;
+  setActivePipeline: (id: string | null) => void;
 }
 
 export const viewStoreSlice = (set: StoreApi<IssueViewState>["setState"]): IssueViewState => ({
@@ -94,6 +96,7 @@ export const viewStoreSlice = (set: StoreApi<IssueViewState>["setState"]): Issue
     childProgress: true,
   },
   listCollapsedStatuses: [],
+  activePipelineId: null,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   toggleStatusFilter: (status) =>
@@ -169,6 +172,7 @@ export const viewStoreSlice = (set: StoreApi<IssueViewState>["setState"]): Issue
       creatorFilters: [],
       projectFilters: [],
       includeNoProject: false,
+      activePipelineId: null,
     }),
   setSortBy: (field) => set({ sortBy: field }),
   setSortDirection: (dir) => set({ sortDirection: dir }),
@@ -185,6 +189,7 @@ export const viewStoreSlice = (set: StoreApi<IssueViewState>["setState"]): Issue
         ? state.listCollapsedStatuses.filter((s) => s !== status)
         : [...state.listCollapsedStatuses, status],
     })),
+  setActivePipeline: (id) => set({ activePipelineId: id }),
 });
 
 export const viewStorePersistOptions = (name: string) => ({
@@ -203,6 +208,7 @@ export const viewStorePersistOptions = (name: string) => ({
     sortDirection: state.sortDirection,
     cardProperties: state.cardProperties,
     listCollapsedStatuses: state.listCollapsedStatuses,
+    activePipelineId: state.activePipelineId,
   }),
 });
 

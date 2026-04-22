@@ -6,7 +6,7 @@ import { Check, ChevronRight, Link2, ListTodo, MoreHorizontal, PanelRight, Pin, 
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@multica/ui/lib/utils";
 import { toast } from "sonner";
-import type { Issue, IssueStatus, ProjectStatus, ProjectPriority } from "@multica/core/types";
+import type { Issue, ProjectStatus, ProjectPriority } from "@multica/core/types";
 import { useAuthStore } from "@multica/core/auth";
 import { projectDetailOptions } from "@multica/core/projects/queries";
 import { useUpdateProject, useDeleteProject } from "@multica/core/projects/mutations";
@@ -131,13 +131,13 @@ function ProjectIssuesContent({
 
   const updateIssueMutation = useUpdateIssue();
   const handleMoveIssue = useCallback(
-    (issueId: string, newStatus: IssueStatus, newPosition?: number) => {
+    (issueId: string, newStatus: string, newPosition?: number) => {
       const viewState = projectViewStore.getState();
       if (viewState.sortBy !== "position") {
         viewState.setSortBy("position");
         viewState.setSortDirection("asc");
       }
-      const updates: Partial<{ status: IssueStatus; position: number }> = { status: newStatus };
+      const updates: Partial<{ status: string; position: number }> = { status: newStatus };
       if (newPosition !== undefined) updates.position = newPosition;
       updateIssueMutation.mutate(
         { id: issueId, ...updates },

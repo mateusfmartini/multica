@@ -94,6 +94,18 @@ vi.mock("@multica/core/issues/config", () => ({
     low: { label: "Low", bars: 1, color: "text-info" },
     none: { label: "No priority", bars: 0, color: "text-muted-foreground" },
   },
+  getStatusConfig: (status: string) => {
+    const cfg: Record<string, { label: string; iconColor: string; hoverBg: string; dividerColor?: string; badgeBg?: string; badgeText?: string; columnBg?: string }> = {
+      backlog: { label: "Backlog", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent" },
+      todo: { label: "Todo", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent" },
+      in_progress: { label: "In Progress", iconColor: "text-warning", hoverBg: "hover:bg-warning/10" },
+      in_review: { label: "In Review", iconColor: "text-success", hoverBg: "hover:bg-success/10" },
+      done: { label: "Done", iconColor: "text-info", hoverBg: "hover:bg-info/10" },
+      blocked: { label: "Blocked", iconColor: "text-destructive", hoverBg: "hover:bg-destructive/10" },
+      cancelled: { label: "Cancelled", iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent" },
+    };
+    return cfg[status] ?? { label: status, iconColor: "text-muted-foreground", hoverBg: "hover:bg-accent", dividerColor: "bg-muted-foreground/40", badgeBg: "bg-muted", badgeText: "text-muted-foreground", columnBg: "bg-muted/40" };
+  },
 }));
 
 // Mock view store
@@ -277,6 +289,7 @@ const mockIssues: Issue[] = [
     due_date: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
+    pipeline_id: null,
   },
   {
     ...issueDefaults,
@@ -295,6 +308,7 @@ const mockIssues: Issue[] = [
     due_date: "2026-02-01T00:00:00Z",
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
+    pipeline_id: null,
   },
   {
     ...issueDefaults,
@@ -313,6 +327,7 @@ const mockIssues: Issue[] = [
     due_date: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
+    pipeline_id: null,
   },
 ];
 

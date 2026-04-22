@@ -66,7 +66,7 @@ export function CreateIssueModal({ onClose, data }: { onClose: () => void; data?
   const { isDragOver: descDragOver, dropZoneProps: descDropZoneProps } = useFileDropZone({
     onDrop: (files) => files.forEach((f) => descEditorRef.current?.uploadFile(f)),
   });
-  const [status, setStatus] = useState<IssueStatus>((data?.status as IssueStatus) || draft.status);
+  const [status, setStatus] = useState<string>((data?.status as string) || draft.status);
   const [priority, setPriority] = useState<IssuePriority>(draft.priority);
   const [submitting, setSubmitting] = useState(false);
   const [assigneeType, setAssigneeType] = useState<IssueAssigneeType | undefined>(draft.assigneeType);
@@ -91,7 +91,7 @@ export function CreateIssueModal({ onClose, data }: { onClose: () => void; data?
 
   // Sync field changes to draft store
   const updateTitle = (v: string) => { setTitle(v); setDraft({ title: v }); };
-  const updateStatus = (v: IssueStatus) => { setStatus(v); setDraft({ status: v }); };
+  const updateStatus = (v: string) => { setStatus(v); setDraft({ status: v as IssueStatus }); };
   const updatePriority = (v: IssuePriority) => { setPriority(v); setDraft({ priority: v }); };
   const updateAssignee = (type?: IssueAssigneeType, id?: string) => {
     setAssigneeType(type); setAssigneeId(id);

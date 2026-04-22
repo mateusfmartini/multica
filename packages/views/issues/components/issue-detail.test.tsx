@@ -216,6 +216,15 @@ vi.mock("@multica/core/issues/config", () => ({
     low: { label: "Low", bars: 1, color: "text-info", badgeBg: "bg-info/10", badgeText: "text-info" },
     none: { label: "No priority", bars: 0, color: "text-muted-foreground", badgeBg: "bg-muted", badgeText: "text-muted-foreground" },
   },
+  getStatusConfig: (status: string) => ({
+    label: status,
+    iconColor: "text-muted-foreground",
+    hoverBg: "hover:bg-accent",
+    dividerColor: "bg-muted-foreground/40",
+    badgeBg: "bg-muted",
+    badgeText: "text-muted-foreground",
+    columnBg: "bg-muted/40",
+  }),
 }));
 
 // Mock recent issues store
@@ -302,6 +311,7 @@ const mockIssue: Issue = {
   due_date: "2026-06-01T00:00:00Z",
   created_at: "2026-01-15T00:00:00Z",
   updated_at: "2026-01-20T00:00:00Z",
+  pipeline_id: null,
 };
 
 const mockTimeline: TimelineEntry[] = [

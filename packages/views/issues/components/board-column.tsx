@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
 } from "@multica/ui/components/ui/dropdown-menu";
 import { Popover, PopoverTrigger, PopoverContent } from "@multica/ui/components/ui/popover";
-import { STATUS_CONFIG } from "@multica/core/issues/config";
+import { getStatusConfig } from "@multica/core/issues/config";
 import { useModalStore } from "@multica/core/modals";
 import { useViewStoreApi } from "@multica/core/issues/stores/view-store-context";
 import { Markdown } from "../../common/markdown";
@@ -32,7 +32,7 @@ export function BoardColumn({
   totalCount,
   footer,
 }: {
-  status: IssueStatus;
+  status: string;
   issueIds: string[];
   issueMap: Map<string, Issue>;
   columnConfig?: WorkspaceColumnConfig;
@@ -40,7 +40,7 @@ export function BoardColumn({
   totalCount?: number;
   footer?: ReactNode;
 }) {
-  const cfg = STATUS_CONFIG[status];
+  const cfg = getStatusConfig(status);
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const viewStoreApi = useViewStoreApi();
   const [instructionsOpen, setInstructionsOpen] = useState(false);
@@ -76,7 +76,7 @@ export function BoardColumn({
                 <div className="mt-2 flex flex-wrap gap-1">
                   {columnConfig?.allowed_transitions.map((transition) => (
                     <Badge key={transition} variant="outline" className="px-1.5 py-0 text-[10px] font-medium">
-                      {STATUS_CONFIG[transition].label}
+                      {getStatusConfig(transition).label}
                     </Badge>
                   ))}
                 </div>
@@ -127,7 +127,7 @@ export function BoardColumn({
                   }
                 />
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => viewStoreApi.getState().hideStatus(status)}>
+                  <DropdownMenuItem onClick={() => viewStoreApi.getState().hideStatus(status as IssueStatus)}>
                     <EyeOff className="size-3.5" />
                     Hide column
                   </DropdownMenuItem>

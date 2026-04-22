@@ -178,7 +178,7 @@ export function useRealtimeSync(
       if (wsId) {
         onIssueUpdated(qc, wsId, issue);
         if (issue.status) {
-          onInboxIssueStatusChanged(qc, wsId, issue.id, issue.status);
+          onInboxIssueStatusChanged(qc, wsId, issue.id, issue.status as import("../types").IssueStatus);
         }
       }
     });

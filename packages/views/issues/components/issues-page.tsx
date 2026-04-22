@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { ChevronRight, ListTodo } from "lucide-react";
-import type { IssueStatus } from "@multica/core/types";
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useIssueViewStore, useClearFiltersOnWorkspaceChange } from "@multica/core/issues/stores/view-store";
@@ -16,6 +15,7 @@ import { WorkspaceAvatar } from "../../workspace/workspace-avatar";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { issueListOptions, childIssueProgressOptions } from "@multica/core/issues/queries";
 import { useUpdateIssue } from "@multica/core/issues/mutations";
+import { usePipelineColumns } from "@multica/core/pipeline";
 import { useIssueSelectionStore } from "@multica/core/issues/stores/selection-store";
 import { PageHeader } from "../../layout/page-header";
 import { IssuesHeader } from "./issues-header";
@@ -37,6 +37,9 @@ export function IssuesPage() {
   const creatorFilters = useIssueViewStore((s) => s.creatorFilters);
   const projectFilters = useIssueViewStore((s) => s.projectFilters);
   const includeNoProject = useIssueViewStore((s) => s.includeNoProject);
+  const activePipelineId = useIssueViewStore((s) => s.activePipelineId);
+
+  const { data: activePipelineColumns } = usePipelineColumns(wsId, activePipelineId ?? "");
 
   // Clear filter state when switching between workspaces (URL-driven).
   useClearFiltersOnWorkspaceChange(useIssueViewStore, wsId);
@@ -63,19 +66,25 @@ export function IssuesPage() {
   // regardless of client-side pagination or filtering of done issues.
   const { data: childProgressMap = new Map() } = useQuery(childIssueProgressOptions(wsId));
 
-  const visibleStatuses = useMemo(() => {
+  const visibleStatuses = useMemo((): string[] => {
+    if (activePipelineId && activePipelineColumns?.length) {
+      return [...activePipelineColumns]
+        .sort((a, b) => a.position - b.position)
+        .map((c) => c.status_key);
+    }
     if (statusFilters.length > 0)
       return BOARD_STATUSES.filter((s) => statusFilters.includes(s));
     return BOARD_STATUSES;
-  }, [statusFilters]);
+  }, [activePipelineId, activePipelineColumns, statusFilters]);
 
   const hiddenStatuses = useMemo(() => {
+    if (activePipelineId) return [];
     return BOARD_STATUSES.filter((s) => !visibleStatuses.includes(s));
-  }, [visibleStatuses]);
+  }, [activePipelineId, visibleStatuses]);
 
   const updateIssueMutation = useUpdateIssue();
   const handleMoveIssue = useCallback(
-    (issueId: string, newStatus: IssueStatus, newPosition?: number) => {
+    (issueId: string, newStatus: string, newPosition?: number) => {
       // Auto-switch to manual sort so drag ordering is preserved
       const viewState = useIssueViewStore.getState();
       if (viewState.sortBy !== "position") {
@@ -83,7 +92,7 @@ export function IssuesPage() {
         viewState.setSortDirection("asc");
       }
 
-      const updates: Partial<{ status: IssueStatus; position: number }> = {
+      const updates: Partial<{ status: string; position: number }> = {
         status: newStatus,
       };
       if (newPosition !== undefined) updates.position = newPosition;

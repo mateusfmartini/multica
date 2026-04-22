@@ -36,6 +36,7 @@ type IssueResponse struct {
 	CreatorID          string                  `json:"creator_id"`
 	ParentIssueID      *string                 `json:"parent_issue_id"`
 	ProjectID          *string                 `json:"project_id"`
+	PipelineID         *string                 `json:"pipeline_id"`
 	Position           float64                 `json:"position"`
 	DueDate            *string                 `json:"due_date"`
 	CreatedAt          string                  `json:"created_at"`
@@ -61,6 +62,7 @@ func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
 		CreatorID:     uuidToString(i.CreatorID),
 		ParentIssueID: uuidToPtr(i.ParentIssueID),
 		ProjectID:     uuidToPtr(i.ProjectID),
+		PipelineID:    uuidToPtr(i.PipelineID),
 		Position:      i.Position,
 		DueDate:       timestampToPtr(i.DueDate),
 		CreatedAt:     timestampToString(i.CreatedAt),
@@ -86,6 +88,7 @@ func issueListRowToResponse(i db.ListIssuesRow, issuePrefix string) IssueRespons
 		CreatorID:     uuidToString(i.CreatorID),
 		ParentIssueID: uuidToPtr(i.ParentIssueID),
 		ProjectID:     uuidToPtr(i.ProjectID),
+		PipelineID:    uuidToPtr(i.PipelineID),
 		Position:      i.Position,
 		DueDate:       timestampToPtr(i.DueDate),
 		CreatedAt:     timestampToString(i.CreatedAt),
@@ -110,6 +113,7 @@ func openIssueRowToResponse(i db.ListOpenIssuesRow, issuePrefix string) IssueRes
 		CreatorID:     uuidToString(i.CreatorID),
 		ParentIssueID: uuidToPtr(i.ParentIssueID),
 		ProjectID:     uuidToPtr(i.ProjectID),
+		PipelineID:    uuidToPtr(i.PipelineID),
 		Position:      i.Position,
 		DueDate:       timestampToPtr(i.DueDate),
 		CreatedAt:     timestampToString(i.CreatedAt),
@@ -423,7 +427,7 @@ func buildSearchQuery(phrase string, terms []string, queryNum int, hasNum bool, 
 	query := fmt.Sprintf(`SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
 		i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
 		i.parent_issue_id, i.acceptance_criteria, i.context_refs, i.position,
-		i.due_date, i.created_at, i.updated_at, i.number, i.project_id,
+		i.due_date, i.created_at, i.updated_at, i.number, i.project_id, i.pipeline_id,
 		COUNT(*) OVER() AS total_count,
 		%s AS match_source,
 		%s AS matched_comment_content
@@ -513,6 +517,7 @@ func (h *Handler) SearchIssues(w http.ResponseWriter, r *http.Request) {
 			&sr.issue.UpdatedAt,
 			&sr.issue.Number,
 			&sr.issue.ProjectID,
+			&sr.issue.PipelineID,
 			&sr.totalCount,
 			&sr.matchSource,
 			&sr.matchedCommentContent,
@@ -586,6 +591,10 @@ func (h *Handler) ListIssues(w http.ResponseWriter, r *http.Request) {
 	if p := r.URL.Query().Get("project_id"); p != "" {
 		projectFilter = parseUUID(p)
 	}
+	var pipelineFilter pgtype.UUID
+	if p := r.URL.Query().Get("pipeline_id"); p != "" {
+		pipelineFilter = parseUUID(p)
+	}
 
 	// open_only=true returns all non-done/cancelled issues (no limit).
 	if r.URL.Query().Get("open_only") == "true" {
@@ -643,6 +652,7 @@ func (h *Handler) ListIssues(w http.ResponseWriter, r *http.Request) {
 		AssigneeIds: assigneeIdsFilter,
 		CreatorID:   creatorFilter,
 		ProjectID:   projectFilter,
+		PipelineID:  pipelineFilter,
 	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list issues")
@@ -766,6 +776,7 @@ type CreateIssueRequest struct {
 	AssigneeID         *string  `json:"assignee_id"`
 	ParentIssueID      *string  `json:"parent_issue_id"`
 	ProjectID          *string  `json:"project_id"`
+	PipelineID         *string  `json:"pipeline_id"`
 	DueDate            *string  `json:"due_date"`
 	AttachmentIDs      []string `json:"attachment_ids,omitempty"`
 }
@@ -818,8 +829,12 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 
 	var parentIssueID pgtype.UUID
 	var projectID pgtype.UUID
+	var pipelineID pgtype.UUID
 	if req.ProjectID != nil {
 		projectID = parseUUID(*req.ProjectID)
+	}
+	if req.PipelineID != nil {
+		pipelineID = parseUUID(*req.PipelineID)
 	}
 	if req.ParentIssueID != nil {
 		parentIssueID = parseUUID(*req.ParentIssueID)
@@ -882,6 +897,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		DueDate:            dueDate,
 		Number:             issueNumber,
 		ProjectID:          projectID,
+		PipelineID:         pipelineID,
 	})
 	if err != nil {
 		slog.Warn("create issue failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", workspaceID)...)
@@ -940,6 +956,7 @@ type UpdateIssueRequest struct {
 	DueDate            *string  `json:"due_date"`
 	ParentIssueID      *string  `json:"parent_issue_id"`
 	ProjectID          *string  `json:"project_id"`
+	PipelineID         *string  `json:"pipeline_id"`
 }
 
 func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
@@ -976,6 +993,7 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		DueDate:       prevIssue.DueDate,
 		ParentIssueID: prevIssue.ParentIssueID,
 		ProjectID:     prevIssue.ProjectID,
+		PipelineID:    prevIssue.PipelineID,
 	}
 
 	// COALESCE fields — only set when explicitly provided
@@ -1060,6 +1078,13 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 			params.ProjectID = parseUUID(*req.ProjectID)
 		} else {
 			params.ProjectID = pgtype.UUID{Valid: false}
+		}
+	}
+	if _, ok := rawFields["pipeline_id"]; ok {
+		if req.PipelineID != nil {
+			params.PipelineID = parseUUID(*req.PipelineID)
+		} else {
+			params.PipelineID = pgtype.UUID{Valid: false}
 		}
 	}
 
@@ -1308,6 +1333,7 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 			DueDate:       prevIssue.DueDate,
 			ParentIssueID: prevIssue.ParentIssueID,
 			ProjectID:     prevIssue.ProjectID,
+			PipelineID:    prevIssue.PipelineID,
 		}
 
 		if req.Updates.Title != nil {
@@ -1392,6 +1418,13 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 				params.ProjectID = parseUUID(*req.Updates.ProjectID)
 			} else {
 				params.ProjectID = pgtype.UUID{Valid: false}
+			}
+		}
+		if _, ok := rawUpdates["pipeline_id"]; ok {
+			if req.Updates.PipelineID != nil {
+				params.PipelineID = parseUUID(*req.Updates.PipelineID)
+			} else {
+				params.PipelineID = pgtype.UUID{Valid: false}
 			}
 		}
 

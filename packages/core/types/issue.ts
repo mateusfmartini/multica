@@ -27,7 +27,7 @@ export interface Issue {
   identifier: string;
   title: string;
   description: string | null;
-  status: IssueStatus;
+  status: string;
   priority: IssuePriority;
   assignee_type: IssueAssigneeType | null;
   assignee_id: string | null;
@@ -35,6 +35,7 @@ export interface Issue {
   creator_id: string;
   parent_issue_id: string | null;
   project_id: string | null;
+  pipeline_id: string | null;
   position: number;
   due_date: string | null;
   reactions?: IssueReaction[];

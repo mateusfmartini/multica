@@ -36,7 +36,7 @@ import type { WorkspacePaths } from "@multica/core/paths";
 import { useModalStore } from "@multica/core/modals";
 import { workspaceListOptions } from "@multica/core/workspace/queries";
 import { StatusIcon } from "../issues/components";
-import { STATUS_CONFIG } from "@multica/core/issues/config";
+import { getStatusConfig } from "@multica/core/issues/config";
 import { PROJECT_STATUS_CONFIG } from "@multica/core/projects/config";
 import type { ProjectStatus } from "@multica/core/types";
 import {
@@ -625,9 +625,9 @@ export function SearchCommand() {
                         <HighlightText text={issue.title} query={query} />
                       </span>
                       <span
-                        className={`ml-auto text-xs shrink-0 ${STATUS_CONFIG[issue.status].iconColor}`}
+                        className={`ml-auto text-xs shrink-0 ${getStatusConfig(issue.status).iconColor}`}
                       >
-                        {STATUS_CONFIG[issue.status].label}
+                        {getStatusConfig(issue.status).label}
                       </span>
                     </div>
                     {issue.match_source === "comment" &&
@@ -669,9 +669,9 @@ export function SearchCommand() {
                     </span>
                     <span className="truncate">{item.title}</span>
                     <span
-                      className={`ml-auto text-xs shrink-0 ${STATUS_CONFIG[item.status]?.iconColor ?? ""}`}
+                      className={`ml-auto text-xs shrink-0 ${getStatusConfig(item.status)?.iconColor ?? ""}`}
                     >
-                      {STATUS_CONFIG[item.status]?.label ?? ""}
+                      {getStatusConfig(item.status)?.label ?? ""}
                     </span>
                   </CommandPrimitive.Item>
                 ))}

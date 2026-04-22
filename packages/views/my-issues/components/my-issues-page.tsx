@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useStore } from "zustand";
 import { toast } from "sonner";
 import { ChevronRight, ListTodo } from "lucide-react";
-import type { IssueStatus } from "@multica/core/types";
+
 import { Skeleton } from "@multica/ui/components/ui/skeleton";
 import { useAuthStore } from "@multica/core/auth";
 import { useCurrentWorkspace } from "@multica/core/paths";
@@ -100,14 +100,14 @@ export function MyIssuesPage() {
 
   const updateIssueMutation = useUpdateIssue();
   const handleMoveIssue = useCallback(
-    (issueId: string, newStatus: IssueStatus, newPosition?: number) => {
+    (issueId: string, newStatus: string, newPosition?: number) => {
       const viewState = myIssuesViewStore.getState();
       if (viewState.sortBy !== "position") {
         viewState.setSortBy("position");
         viewState.setSortDirection("asc");
       }
 
-      const updates: Partial<{ status: IssueStatus; position: number }> = {
+      const updates: Partial<{ status: string; position: number }> = {
         status: newStatus,
       };
       if (newPosition !== undefined) updates.position = newPosition;

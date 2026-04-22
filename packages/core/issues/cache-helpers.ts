@@ -1,6 +1,5 @@
 import type {
   Issue,
-  IssueStatus,
   IssueStatusBucket,
   ListIssuesCache,
 } from "../types";
@@ -10,14 +9,14 @@ const EMPTY_BUCKET: IssueStatusBucket = { issues: [], total: 0 };
 
 export function getBucket(
   resp: ListIssuesCache,
-  status: IssueStatus,
+  status: string,
 ): IssueStatusBucket {
   return resp.byStatus[status] ?? EMPTY_BUCKET;
 }
 
 export function setBucket(
   resp: ListIssuesCache,
-  status: IssueStatus,
+  status: string,
   bucket: IssueStatusBucket,
 ): ListIssuesCache {
   return { ...resp, byStatus: { ...resp.byStatus, [status]: bucket } };
@@ -27,7 +26,7 @@ export function setBucket(
 export function findIssueLocation(
   resp: ListIssuesCache,
   id: string,
-): { status: IssueStatus; issue: Issue } | null {
+): { status: string; issue: Issue } | null {
   for (const status of PAGINATED_STATUSES) {
     const bucket = resp.byStatus[status];
     const found = bucket?.issues.find((i) => i.id === id);

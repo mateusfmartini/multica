@@ -8,7 +8,7 @@ import { Button } from "@multica/ui/components/ui/button";
 import type { Issue, IssueStatus } from "@multica/core/types";
 import { useLoadMoreByStatus } from "@multica/core/issues/mutations";
 import type { MyIssuesFilter } from "@multica/core/issues/queries";
-import { STATUS_CONFIG } from "@multica/core/issues/config";
+import { getStatusConfig } from "@multica/core/issues/config";
 import { useModalStore } from "@multica/core/modals";
 import { useViewStore } from "@multica/core/issues/stores/view-store-context";
 import { useIssueSelectionStore } from "@multica/core/issues/stores/selection-store";
@@ -27,7 +27,7 @@ export function ListView({
   myIssuesFilter,
 }: {
   issues: Issue[];
-  visibleStatuses: IssueStatus[];
+  visibleStatuses: string[];
   childProgressMap?: Map<string, ChildProgress>;
   /** When set, per-status load-more targets the scoped cache instead of the workspace one. */
   myIssuesScope?: string;
@@ -43,7 +43,7 @@ export function ListView({
   );
 
   const issuesByStatus = useMemo(() => {
-    const map = new Map<IssueStatus, Issue[]>();
+    const map = new Map<string, Issue[]>();
     for (const status of visibleStatuses) {
       const filtered = issues.filter((i) => i.status === status);
       map.set(status, sortIssues(filtered, sortBy, sortDirection));
@@ -54,7 +54,7 @@ export function ListView({
   const expandedStatuses = useMemo(
     () =>
       visibleStatuses.filter(
-        (s) => !listCollapsedStatuses.includes(s)
+        (s) => !listCollapsedStatuses.includes(s as IssueStatus)
       ),
     [visibleStatuses, listCollapsedStatuses]
   );
@@ -99,12 +99,12 @@ function StatusAccordionItem({
   childProgressMap,
   myIssuesOpts,
 }: {
-  status: IssueStatus;
+  status: string;
   issues: Issue[];
   childProgressMap: Map<string, ChildProgress>;
   myIssuesOpts?: { scope: string; filter: MyIssuesFilter };
 }) {
-  const cfg = STATUS_CONFIG[status];
+  const cfg = getStatusConfig(status);
   const selectedIds = useIssueSelectionStore((s) => s.selectedIds);
   const select = useIssueSelectionStore((s) => s.select);
   const deselect = useIssueSelectionStore((s) => s.deselect);

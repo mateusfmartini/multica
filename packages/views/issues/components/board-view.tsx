@@ -28,7 +28,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@multica/ui/components/ui/dropdown-menu";
-import { ALL_STATUSES, STATUS_CONFIG } from "@multica/core/issues/config";
+import { getStatusConfig } from "@multica/core/issues/config";
 import { useViewStoreApi, useViewStore } from "@multica/core/issues/stores/view-store-context";
 import type { SortField, SortDirection } from "@multica/core/issues/stores/view-store";
 import { sortIssues } from "../utils/sort";
@@ -38,30 +38,30 @@ import { BoardCardContent } from "./board-card";
 import { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
 import type { ChildProgress } from "./list-row";
 
-const COLUMN_IDS = new Set<string>(ALL_STATUSES);
-
-const kanbanCollision: CollisionDetection = (args) => {
-  const pointer = pointerWithin(args);
-  if (pointer.length > 0) {
-    // Prefer card collisions over column collisions so that
-    // dragging down within a column finds the target card
-    // instead of the column droppable.
-    const cards = pointer.filter((c) => !COLUMN_IDS.has(c.id as string));
-    if (cards.length > 0) return cards;
-  }
-  // Fallback: closestCenter finds the nearest card even when
-  // the pointer is in a gap between cards (common when dragging down).
-  return closestCenter(args);
-};
+function makeKanbanCollision(columnIds: Set<string>): CollisionDetection {
+  return (args) => {
+    const pointer = pointerWithin(args);
+    if (pointer.length > 0) {
+      // Prefer card collisions over column collisions so that
+      // dragging down within a column finds the target card
+      // instead of the column droppable.
+      const cards = pointer.filter((c) => !columnIds.has(c.id as string));
+      if (cards.length > 0) return cards;
+    }
+    // Fallback: closestCenter finds the nearest card even when
+    // the pointer is in a gap between cards (common when dragging down).
+    return closestCenter(args);
+  };
+}
 
 /** Build column ID arrays from TQ issue data, respecting current sort. */
 function buildColumns(
   issues: Issue[],
-  visibleStatuses: IssueStatus[],
+  visibleStatuses: string[],
   sortBy: SortField,
   sortDirection: SortDirection,
-): Record<IssueStatus, string[]> {
-  const cols = {} as Record<IssueStatus, string[]>;
+): Record<string, string[]> {
+  const cols = {} as Record<string, string[]>;
   for (const status of visibleStatuses) {
     const sorted = sortIssues(
       issues.filter((i) => i.status === status),
@@ -86,13 +86,13 @@ function computePosition(ids: string[], activeId: string, issueMap: Map<string, 
 
 /** Find which column (status) contains a given ID (issue or column droppable). */
 function findColumn(
-  columns: Record<IssueStatus, string[]>,
+  columns: Record<string, string[]>,
   id: string,
-  visibleStatuses: IssueStatus[],
-): IssueStatus | null {
-  if (visibleStatuses.includes(id as IssueStatus)) return id as IssueStatus;
+  visibleStatuses: string[],
+): string | null {
+  if (visibleStatuses.includes(id)) return id;
   for (const [status, ids] of Object.entries(columns)) {
-    if (ids.includes(id)) return status as IssueStatus;
+    if (ids.includes(id)) return status;
   }
   return null;
 }
@@ -109,11 +109,11 @@ export function BoardView({
   myIssuesFilter,
 }: {
   issues: Issue[];
-  visibleStatuses: IssueStatus[];
-  hiddenStatuses: IssueStatus[];
+  visibleStatuses: string[];
+  hiddenStatuses: string[];
   onMoveIssue: (
     issueId: string,
-    newStatus: IssueStatus,
+    newStatus: string,
     newPosition?: number
   ) => void;
   childProgressMap?: Map<string, ChildProgress>;
@@ -125,6 +125,8 @@ export function BoardView({
   const { data: columnConfigs = [] } = useColumnConfigs(wsId);
   const sortBy = useViewStore((s) => s.sortBy);
   const sortDirection = useViewStore((s) => s.sortDirection);
+  const columnIdSet = useMemo(() => new Set<string>(visibleStatuses), [visibleStatuses]);
+  const kanbanCollision = useMemo(() => makeKanbanCollision(columnIdSet), [columnIdSet]);
   const myIssuesOpts = myIssuesScope
     ? { scope: myIssuesScope, filter: myIssuesFilter ?? {} }
     : undefined;
@@ -140,7 +142,7 @@ export function BoardView({
   // --- Local columns state ---
   // Between drags: follows TQ via useEffect.
   // During drag: local-only, driven by onDragOver/onDragEnd.
-  const [columns, setColumns] = useState<Record<IssueStatus, string[]>>(() =>
+  const [columns, setColumns] = useState<Record<string, string[]>>(() =>
     buildColumns(issues, visibleStatuses, sortBy, sortDirection),
   );
   const columnsRef = useRef(columns);
@@ -294,7 +296,7 @@ export function BoardView({
             status={status}
             issueIds={columns[status] ?? []}
             issueMap={issueMapRef.current}
-            columnConfig={columnConfigMap.get(status)}
+            columnConfig={columnConfigMap.get(status as import("@multica/core/types").IssueStatus)}
             childProgressMap={childProgressMap}
             myIssuesOpts={myIssuesOpts}
           />
@@ -327,7 +329,7 @@ function PaginatedBoardColumn({
   columnConfig,
   myIssuesOpts,
 }: {
-  status: IssueStatus;
+  status: string;
   issueIds: string[];
   issueMap: Map<string, Issue>;
   childProgressMap?: Map<string, ChildProgress>;
@@ -359,7 +361,7 @@ function HiddenColumnsPanel({
   hiddenStatuses,
   myIssuesOpts,
 }: {
-  hiddenStatuses: IssueStatus[];
+  hiddenStatuses: string[];
   myIssuesOpts?: { scope: string; filter: MyIssuesFilter };
 }) {
   return (
@@ -386,10 +388,10 @@ function HiddenColumnRow({
   status,
   myIssuesOpts,
 }: {
-  status: IssueStatus;
+  status: string;
   myIssuesOpts?: { scope: string; filter: MyIssuesFilter };
 }) {
-  const cfg = STATUS_CONFIG[status];
+  const cfg = getStatusConfig(status);
   const viewStoreApi = useViewStoreApi();
   const { total } = useLoadMoreByStatus(status, myIssuesOpts);
   return (
@@ -414,7 +416,7 @@ function HiddenColumnRow({
           />
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => viewStoreApi.getState().showStatus(status)}
+              onClick={() => viewStoreApi.getState().showStatus(status as IssueStatus)}
             >
               <Eye className="size-3.5" />
               Show column
