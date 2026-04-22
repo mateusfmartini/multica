@@ -11,6 +11,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const clearDefaultPipelines = `-- name: ClearDefaultPipelines :exec
+UPDATE pipeline SET is_default = FALSE WHERE workspace_id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) ClearDefaultPipelines(ctx context.Context, workspaceID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, clearDefaultPipelines, workspaceID)
+	return err
+}
+
+const createPipeline = `-- name: CreatePipeline :one
+INSERT INTO pipeline (workspace_id, name, description, is_default)
+VALUES ($1, $2, $3, $4)
+RETURNING id, workspace_id, name, description, is_default, deleted_at, created_at, updated_at
+`
+
+type CreatePipelineParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	IsDefault   bool        `json:"is_default"`
+}
+
+func (q *Queries) CreatePipeline(ctx context.Context, arg CreatePipelineParams) (Pipeline, error) {
+	row := q.db.QueryRow(ctx, createPipeline,
+		arg.WorkspaceID,
+		arg.Name,
+		arg.Description,
+		arg.IsDefault,
+	)
+	var i Pipeline
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.Description,
+		&i.IsDefault,
+		&i.DeletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deletePipelineColumnsByPipeline = `-- name: DeletePipelineColumnsByPipeline :exec
+DELETE FROM pipeline_column WHERE pipeline_id = $1
+`
+
+func (q *Queries) DeletePipelineColumnsByPipeline(ctx context.Context, pipelineID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deletePipelineColumnsByPipeline, pipelineID)
+	return err
+}
+
 const getPipeline = `-- name: GetPipeline :one
 SELECT id, workspace_id, name, description, is_default, deleted_at, created_at, updated_at FROM pipeline
 WHERE id = $1
@@ -32,8 +84,50 @@ func (q *Queries) GetPipeline(ctx context.Context, id pgtype.UUID) (Pipeline, er
 	return i, err
 }
 
+const insertPipelineColumn = `-- name: InsertPipelineColumn :one
+INSERT INTO pipeline_column (pipeline_id, status_key, label, position, is_terminal, instructions, allowed_transitions)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, pipeline_id, status_key, label, position, is_terminal, instructions, allowed_transitions, created_at, updated_at
+`
+
+type InsertPipelineColumnParams struct {
+	PipelineID         pgtype.UUID `json:"pipeline_id"`
+	StatusKey          string      `json:"status_key"`
+	Label              string      `json:"label"`
+	Position           int32       `json:"position"`
+	IsTerminal         bool        `json:"is_terminal"`
+	Instructions       string      `json:"instructions"`
+	AllowedTransitions []string    `json:"allowed_transitions"`
+}
+
+func (q *Queries) InsertPipelineColumn(ctx context.Context, arg InsertPipelineColumnParams) (PipelineColumn, error) {
+	row := q.db.QueryRow(ctx, insertPipelineColumn,
+		arg.PipelineID,
+		arg.StatusKey,
+		arg.Label,
+		arg.Position,
+		arg.IsTerminal,
+		arg.Instructions,
+		arg.AllowedTransitions,
+	)
+	var i PipelineColumn
+	err := row.Scan(
+		&i.ID,
+		&i.PipelineID,
+		&i.StatusKey,
+		&i.Label,
+		&i.Position,
+		&i.IsTerminal,
+		&i.Instructions,
+		&i.AllowedTransitions,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listPipelineColumns = `-- name: ListPipelineColumns :many
-SELECT id, pipeline_id, status_key, label, position, is_terminal, allowed_transitions, created_at, updated_at FROM pipeline_column
+SELECT id, pipeline_id, status_key, label, position, is_terminal, instructions, allowed_transitions, created_at, updated_at FROM pipeline_column
 WHERE pipeline_id = $1
 ORDER BY position ASC
 `
@@ -54,6 +148,7 @@ func (q *Queries) ListPipelineColumns(ctx context.Context, pipelineID pgtype.UUI
 			&i.Label,
 			&i.Position,
 			&i.IsTerminal,
+			&i.Instructions,
 			&i.AllowedTransitions,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -107,4 +202,51 @@ func (q *Queries) ListPipelinesByWorkspace(ctx context.Context, arg ListPipeline
 		return nil, err
 	}
 	return items, nil
+}
+
+const markPipelineAsDefault = `-- name: MarkPipelineAsDefault :exec
+UPDATE pipeline SET is_default = TRUE, updated_at = NOW() WHERE id = $1
+`
+
+func (q *Queries) MarkPipelineAsDefault(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, markPipelineAsDefault, id)
+	return err
+}
+
+const softDeletePipeline = `-- name: SoftDeletePipeline :exec
+UPDATE pipeline SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeletePipeline(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, softDeletePipeline, id)
+	return err
+}
+
+const updatePipeline = `-- name: UpdatePipeline :one
+UPDATE pipeline
+SET name = $2, description = $3, updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, workspace_id, name, description, is_default, deleted_at, created_at, updated_at
+`
+
+type UpdatePipelineParams struct {
+	ID          pgtype.UUID `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+}
+
+func (q *Queries) UpdatePipeline(ctx context.Context, arg UpdatePipelineParams) (Pipeline, error) {
+	row := q.db.QueryRow(ctx, updatePipeline, arg.ID, arg.Name, arg.Description)
+	var i Pipeline
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.Description,
+		&i.IsDefault,
+		&i.DeletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

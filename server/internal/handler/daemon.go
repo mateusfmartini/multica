@@ -603,13 +603,30 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 
 	// Build response with fresh agent data (name + skills + custom_env + custom_args).
 	resp := taskToResponse(*task)
+
+	// Load workspace env as the base layer — agent env overwrites on conflict.
+	var wsEnv map[string]string
+	if ws, err := h.Queries.GetWorkspace(r.Context(), parseUUID(runtimeWorkspaceID)); err == nil && ws.CustomEnv != nil {
+		if err := json.Unmarshal(ws.CustomEnv, &wsEnv); err != nil {
+			slog.Warn("failed to unmarshal workspace custom_env", "workspace_id", runtimeWorkspaceID, "error", err)
+		}
+	}
+
 	if agent, err := h.Queries.GetAgent(r.Context(), task.AgentID); err == nil {
 		skills := h.TaskService.LoadAgentSkills(r.Context(), task.AgentID)
-		var customEnv map[string]string
+		var agentEnv map[string]string
 		if agent.CustomEnv != nil {
-			if err := json.Unmarshal(agent.CustomEnv, &customEnv); err != nil {
+			if err := json.Unmarshal(agent.CustomEnv, &agentEnv); err != nil {
 				slog.Warn("failed to unmarshal agent custom_env", "agent_id", uuidToString(agent.ID), "error", err)
 			}
+		}
+		// Merge: workspace env is the base, agent env overwrites on conflict.
+		customEnv := make(map[string]string, len(wsEnv)+len(agentEnv))
+		for k, v := range wsEnv {
+			customEnv[k] = v
+		}
+		for k, v := range agentEnv {
+			customEnv[k] = v
 		}
 		var customArgs []string
 		if agent.CustomArgs != nil {

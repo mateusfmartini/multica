@@ -43,6 +43,13 @@ export type { StorageAdapter } from "./storage";
 export type { Project, ProjectStatus, ProjectPriority, CreateProjectRequest, UpdateProjectRequest, ListProjectsResponse } from "./project";
 export type { PinnedItem, PinnedItemType, CreatePinRequest, ReorderPinsRequest } from "./pin";
 export type {
+  Pipeline,
+  PipelineColumn,
+  CreatePipelineRequest,
+  UpdatePipelineRequest,
+  PipelineColumnInput,
+} from "./pipeline";
+export type {
   Autopilot,
   AutopilotStatus,
   AutopilotExecutionMode,

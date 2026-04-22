@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { BookOpen, EyeOff, MoreHorizontal, Plus, Settings2 } from "lucide-react";
+import { BookOpen, EyeOff, MoreHorizontal, Plus } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -21,7 +21,6 @@ import { useViewStoreApi } from "@multica/core/issues/stores/view-store-context"
 import { Markdown } from "../../common/markdown";
 import { StatusIcon } from "./status-icon";
 import { DraggableBoardCard } from "./board-card";
-import { ColumnInstructionsModal } from "./column-instructions-modal";
 import type { ChildProgress } from "./list-row";
 
 export function BoardColumn({
@@ -45,7 +44,6 @@ export function BoardColumn({
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const viewStoreApi = useViewStoreApi();
   const [instructionsOpen, setInstructionsOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const hasInstructions = Boolean(columnConfig?.instructions.trim());
 
   // Resolve IDs to Issue objects, preserving parent-provided order
@@ -120,22 +118,6 @@ export function BoardColumn({
                 </Popover>
               )}
 
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="rounded-full text-muted-foreground transition-opacity md:opacity-0 md:group-hover/header:opacity-100 md:focus-visible:opacity-100"
-                      onClick={() => setEditOpen(true)}
-                    >
-                      <Settings2 className="size-3.5" />
-                    </Button>
-                  }
-                />
-                <TooltipContent>Edit column settings</TooltipContent>
-              </Tooltip>
-
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
@@ -190,13 +172,6 @@ export function BoardColumn({
           {footer}
         </div>
       </div>
-
-      <ColumnInstructionsModal
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        status={status}
-        config={columnConfig}
-      />
     </>
   );
 }

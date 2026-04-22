@@ -33,16 +33,18 @@ func generateIssuePrefix(name string) string {
 }
 
 type WorkspaceResponse struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Slug        string  `json:"slug"`
-	Description *string `json:"description"`
-	Context     *string `json:"context"`
-	Settings    any     `json:"settings"`
-	Repos       any     `json:"repos"`
-	IssuePrefix string  `json:"issue_prefix"`
-	CreatedAt   string  `json:"created_at"`
-	UpdatedAt   string  `json:"updated_at"`
+	ID                 string            `json:"id"`
+	Name               string            `json:"name"`
+	Slug               string            `json:"slug"`
+	Description        *string           `json:"description"`
+	Context            *string           `json:"context"`
+	Settings           any               `json:"settings"`
+	Repos              any               `json:"repos"`
+	IssuePrefix        string            `json:"issue_prefix"`
+	CustomEnv          map[string]string `json:"custom_env"`
+	CustomEnvRedacted  bool              `json:"custom_env_redacted"`
+	CreatedAt          string            `json:"created_at"`
+	UpdatedAt          string            `json:"updated_at"`
 }
 
 func workspaceToResponse(w db.Workspace) WorkspaceResponse {
@@ -60,6 +62,13 @@ func workspaceToResponse(w db.Workspace) WorkspaceResponse {
 	if repos == nil {
 		repos = []any{}
 	}
+	var customEnv map[string]string
+	if w.CustomEnv != nil {
+		json.Unmarshal(w.CustomEnv, &customEnv)
+	}
+	if customEnv == nil {
+		customEnv = map[string]string{}
+	}
 	return WorkspaceResponse{
 		ID:          uuidToString(w.ID),
 		Name:        w.Name,
@@ -69,9 +78,19 @@ func workspaceToResponse(w db.Workspace) WorkspaceResponse {
 		Settings:    settings,
 		Repos:       repos,
 		IssuePrefix: w.IssuePrefix,
+		CustomEnv:   customEnv,
 		CreatedAt:   timestampToString(w.CreatedAt),
 		UpdatedAt:   timestampToString(w.UpdatedAt),
 	}
+}
+
+func redactWorkspaceEnv(resp *WorkspaceResponse) {
+	masked := make(map[string]string, len(resp.CustomEnv))
+	for k := range resp.CustomEnv {
+		masked[k] = "****"
+	}
+	resp.CustomEnv = masked
+	resp.CustomEnvRedacted = true
 }
 
 type MemberResponse struct {
@@ -106,7 +125,9 @@ func (h *Handler) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	resp := make([]WorkspaceResponse, len(workspaces))
 	for i, ws := range workspaces {
-		resp[i] = workspaceToResponse(ws)
+		r := workspaceToResponse(ws)
+		redactWorkspaceEnv(&r)
+		resp[i] = r
 	}
 
 	writeJSON(w, http.StatusOK, resp)
@@ -120,7 +141,16 @@ func (h *Handler) GetWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "workspace not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, workspaceToResponse(ws))
+
+	resp := workspaceToResponse(ws)
+	member, ok := h.workspaceMember(w, r, id)
+	if !ok {
+		return
+	}
+	if !roleAllowed(member.Role, "owner", "admin") {
+		redactWorkspaceEnv(&resp)
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 type CreateWorkspaceRequest struct {
@@ -213,12 +243,13 @@ func (h *Handler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 type UpdateWorkspaceRequest struct {
-	Name        *string `json:"name"`
-	Description *string `json:"description"`
-	Context     *string `json:"context"`
-	Settings    any     `json:"settings"`
-	Repos       any     `json:"repos"`
-	IssuePrefix *string `json:"issue_prefix"`
+	Name        *string            `json:"name"`
+	Description *string            `json:"description"`
+	Context     *string            `json:"context"`
+	Settings    any                `json:"settings"`
+	Repos       any                `json:"repos"`
+	IssuePrefix *string            `json:"issue_prefix"`
+	CustomEnv   *map[string]string `json:"custom_env"`
 }
 
 func (h *Handler) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +291,10 @@ func (h *Handler) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 		if prefix != "" {
 			params.IssuePrefix = pgtype.Text{String: prefix, Valid: true}
 		}
+	}
+	if req.CustomEnv != nil {
+		ce, _ := json.Marshal(*req.CustomEnv)
+		params.CustomEnv = ce
 	}
 
 	ws, err := h.Queries.UpdateWorkspace(r.Context(), params)

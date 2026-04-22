@@ -14,6 +14,8 @@ export interface Workspace {
   settings: Record<string, unknown>;
   repos: WorkspaceRepo[];
   issue_prefix: string;
+  custom_env: Record<string, string>;
+  custom_env_redacted: boolean;
   created_at: string;
   updated_at: string;
 }

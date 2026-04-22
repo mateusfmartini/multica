@@ -65,6 +65,7 @@
     "./utils": "./utils.ts",
     "./constants/*": "./constants/*.ts",
     "./platform": "./platform/index.ts",
+    "./pipeline": "./pipeline/index.ts",
     "./analytics": "./analytics/index.ts"
   },
   "dependencies": {

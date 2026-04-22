@@ -344,6 +344,7 @@ type PipelineColumn struct {
 	Label              string             `json:"label"`
 	Position           int32              `json:"position"`
 	IsTerminal         bool               `json:"is_terminal"`
+	Instructions       string             `json:"instructions"`
 	AllowedTransitions []string           `json:"allowed_transitions"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
@@ -444,6 +445,7 @@ type Workspace struct {
 	Repos        []byte             `json:"repos"`
 	IssuePrefix  string             `json:"issue_prefix"`
 	IssueCounter int32              `json:"issue_counter"`
+	CustomEnv    []byte             `json:"custom_env"`
 }
 
 type WorkspaceColumnConfig struct {

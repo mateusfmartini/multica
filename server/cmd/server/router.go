@@ -189,6 +189,11 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus, analytics
 					r.Post("/leave", h.LeaveWorkspace)
 					r.Get("/invitations", h.ListWorkspaceInvitations)
 					r.Get("/column-configs", h.ListColumnConfigs)
+					r.Get("/pipelines", h.ListPipelines)
+					r.Route("/pipelines/{pipelineId}", func(r chi.Router) {
+						r.Get("/", h.GetPipeline)
+						r.Get("/columns", h.ListPipelineColumns)
+					})
 				})
 				// Admin-level access
 				r.Group(func(r chi.Router) {
@@ -197,6 +202,13 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus, analytics
 					r.Patch("/", h.UpdateWorkspace)
 					r.Post("/members", h.CreateInvitation)
 					r.Put("/column-configs/{status}", h.UpsertColumnConfig)
+					r.Post("/pipelines", h.CreatePipeline)
+					r.Route("/pipelines/{pipelineId}", func(r chi.Router) {
+						r.Patch("/", h.UpdatePipeline)
+						r.Delete("/", h.DeletePipeline)
+						r.Post("/set-default", h.SetDefaultPipeline)
+						r.Put("/columns", h.SyncPipelineColumns)
+					})
 					r.Route("/members/{memberId}", func(r chi.Router) {
 						r.Patch("/", h.UpdateMember)
 						r.Delete("/", h.DeleteMember)

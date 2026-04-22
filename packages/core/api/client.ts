@@ -66,6 +66,11 @@ import type {
   ListAutopilotRunsResponse,
   WorkspaceColumnConfig,
   UpdateWorkspaceColumnConfigRequest,
+  Pipeline,
+  PipelineColumn,
+  CreatePipelineRequest,
+  UpdatePipelineRequest,
+  PipelineColumnInput,
 } from "../types";
 import { type Logger, noopLogger } from "../logger";
 import { createRequestId } from "../utils";
@@ -671,6 +676,51 @@ export class ApiClient {
     });
   }
 
+  async listPipelines(workspaceId: string): Promise<Pipeline[]> {
+    return this.fetch(`/api/workspaces/${workspaceId}/pipelines`);
+  }
+
+  async getPipeline(workspaceId: string, pipelineId: string): Promise<Pipeline> {
+    return this.fetch(`/api/workspaces/${workspaceId}/pipelines/${pipelineId}`);
+  }
+
+  async createPipeline(workspaceId: string, data: CreatePipelineRequest): Promise<Pipeline> {
+    return this.fetch(`/api/workspaces/${workspaceId}/pipelines`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePipeline(workspaceId: string, pipelineId: string, data: UpdatePipelineRequest): Promise<Pipeline> {
+    return this.fetch(`/api/workspaces/${workspaceId}/pipelines/${pipelineId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePipeline(workspaceId: string, pipelineId: string): Promise<void> {
+    return this.fetch(`/api/workspaces/${workspaceId}/pipelines/${pipelineId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async setDefaultPipeline(workspaceId: string, pipelineId: string): Promise<void> {
+    return this.fetch(`/api/workspaces/${workspaceId}/pipelines/${pipelineId}/set-default`, {
+      method: "POST",
+    });
+  }
+
+  async listPipelineColumns(workspaceId: string, pipelineId: string): Promise<PipelineColumn[]> {
+    return this.fetch(`/api/workspaces/${workspaceId}/pipelines/${pipelineId}/columns`);
+  }
+
+  async syncPipelineColumns(workspaceId: string, pipelineId: string, columns: PipelineColumnInput[]): Promise<PipelineColumn[]> {
+    return this.fetch(`/api/workspaces/${workspaceId}/pipelines/${pipelineId}/columns`, {
+      method: "PUT",
+      body: JSON.stringify(columns),
+    });
+  }
+
   async createWorkspace(data: { name: string; slug: string; description?: string; context?: string }): Promise<Workspace> {
     return this.fetch("/api/workspaces", {
       method: "POST",
@@ -678,7 +728,7 @@ export class ApiClient {
     });
   }
 
-  async updateWorkspace(id: string, data: { name?: string; description?: string; context?: string; settings?: Record<string, unknown>; repos?: WorkspaceRepo[] }): Promise<Workspace> {
+  async updateWorkspace(id: string, data: { name?: string; description?: string; context?: string; settings?: Record<string, unknown>; repos?: WorkspaceRepo[]; custom_env?: Record<string, string> }): Promise<Workspace> {
     return this.fetch(`/api/workspaces/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
