@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigation } from "../navigation";
 import { Check, ChevronRight, Maximize2, Minimize2, X as XIcon } from "lucide-react";
 import { cn } from "@multica/ui/lib/utils";
@@ -15,11 +15,14 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/
 import { Button } from "@multica/ui/components/ui/button";
 import { ContentEditor, type ContentEditorRef, TitleEditor, useFileDropZone, FileDropOverlay } from "../editor";
 import { StatusIcon, StatusPicker, PriorityPicker, AssigneePicker, DueDatePicker } from "../issues/components";
+import { IssuePipelinePicker } from "../issues/components/pickers";
 import { BacklogAgentHintContent } from "../issues/components/backlog-agent-hint-dialog";
 import { ProjectPicker } from "../projects/components/project-picker";
 import { useCurrentWorkspace, useWorkspacePaths } from "@multica/core/paths";
+import { useWorkspaceId } from "@multica/core/hooks";
 import { useIssueDraftStore } from "@multica/core/issues/stores/draft-store";
 import { useCreateIssue, useUpdateIssue } from "@multica/core/issues/mutations";
+import { usePipelineColumns } from "@multica/core/pipeline";
 import { useFileUpload } from "@multica/core/hooks/use-file-upload";
 import { api } from "@multica/core/api";
 import { FileUploadButton } from "@multica/ui/components/common/file-upload-button";
@@ -99,6 +102,25 @@ export function CreateIssueModal({ onClose, data }: { onClose: () => void; data?
   };
   const updateDueDate = (v: string | null) => { setDueDate(v); setDraft({ dueDate: v }); };
 
+  const wsId = useWorkspaceId();
+  const [pipelineId, setPipelineId] = useState<string | undefined>(undefined);
+  const { data: rawPipelineColumns = [] } = usePipelineColumns(wsId, pipelineId ?? "");
+  const activePipelineColumns = useMemo(
+    () =>
+      pipelineId && rawPipelineColumns.length
+        ? [...rawPipelineColumns]
+            .sort((a, b) => a.position - b.position)
+            .map((c) => ({ status_key: c.status_key, label: c.label }))
+        : undefined,
+    [pipelineId, rawPipelineColumns],
+  );
+  useEffect(() => {
+    if (activePipelineColumns?.length && !activePipelineColumns.find((c) => c.status_key === status)) {
+      updateStatus(activePipelineColumns[0]!.status_key);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePipelineColumns]);
+
   const createIssueMutation = useCreateIssue();
   const updateIssueMutation = useUpdateIssue();
   const handleSubmit = async () => {
@@ -116,6 +138,7 @@ export function CreateIssueModal({ onClose, data }: { onClose: () => void; data?
         attachment_ids: attachmentIds.length > 0 ? attachmentIds : undefined,
         parent_issue_id: (data?.parent_issue_id as string) || undefined,
         project_id: projectId,
+        pipeline_id: pipelineId,
       });
       clearDraft();
       const shouldShowBacklogHint =
@@ -279,10 +302,19 @@ export function CreateIssueModal({ onClose, data }: { onClose: () => void; data?
 
             {/* Property toolbar */}
             <div className="flex items-center gap-1.5 px-4 py-2 shrink-0 flex-wrap">
+              {/* Pipeline */}
+              <IssuePipelinePicker
+                wsId={wsId}
+                pipelineId={pipelineId ?? null}
+                onUpdate={(u) => setPipelineId(u.pipeline_id ?? undefined)}
+                triggerRender={<PillButton />}
+              />
+
               {/* Status */}
               <StatusPicker
                 status={status}
                 onUpdate={(u) => { if (u.status) updateStatus(u.status); }}
+                pipelineColumns={activePipelineColumns}
                 triggerRender={<PillButton />}
                 align="start"
               />

@@ -10,11 +10,13 @@ export function IssuePipelinePicker({
   pipelineId,
   onUpdate,
   trigger,
+  triggerRender,
 }: {
   wsId: string;
   pipelineId: string | null;
   onUpdate: (updates: { pipeline_id: string | null }) => void;
   trigger?: React.ReactNode;
+  triggerRender?: React.ReactElement;
 }) {
   const [open, setOpen] = useState(false);
   const { data: pipelines = [] } = usePipelines(wsId);
@@ -33,6 +35,7 @@ export function IssuePipelinePicker({
       onOpenChange={setOpen}
       width="w-52"
       trigger={trigger ?? defaultTrigger}
+      triggerRender={triggerRender}
     >
       <PickerItem
         selected={pipelineId === null}

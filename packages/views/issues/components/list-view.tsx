@@ -23,12 +23,14 @@ export function ListView({
   issues,
   visibleStatuses,
   childProgressMap = EMPTY_PROGRESS_MAP,
+  columnLabels,
   myIssuesScope,
   myIssuesFilter,
 }: {
   issues: Issue[];
   visibleStatuses: string[];
   childProgressMap?: Map<string, ChildProgress>;
+  columnLabels?: Record<string, string>;
   /** When set, per-status load-more targets the scoped cache instead of the workspace one. */
   myIssuesScope?: string;
   myIssuesFilter?: MyIssuesFilter;
@@ -83,6 +85,7 @@ export function ListView({
           <StatusAccordionItem
             key={status}
             status={status}
+            label={columnLabels?.[status]}
             issues={issuesByStatus.get(status) ?? []}
             childProgressMap={childProgressMap}
             myIssuesOpts={myIssuesOpts}
