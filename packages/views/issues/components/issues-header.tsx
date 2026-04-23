@@ -440,7 +440,7 @@ export function IssuesHeader({ scopedIssues }: { scopedIssues: Issue[] }) {
             <TooltipContent side="bottom">{s.description}</TooltipContent>
           </Tooltip>
         ))}
-        {viewMode === "board" && <PipelinePicker wsId={wsId} />}
+        <PipelinePicker wsId={wsId} />
       </div>
 
       {/* Right: filter + display + view toggle */}

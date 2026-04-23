@@ -64,6 +64,7 @@ import type { UpdateIssueRequest, IssueStatus, IssuePriority, TimelineEntry, Iss
 import { ALL_STATUSES, STATUS_CONFIG, PRIORITY_ORDER, PRIORITY_CONFIG } from "@multica/core/issues/config";
 import { StatusIcon, PriorityIcon, StatusPicker, PriorityPicker, DueDatePicker, AssigneePicker, canAssignAgent } from ".";
 import { ProjectPicker } from "../../projects/components/project-picker";
+import { IssuePipelinePicker } from "./pickers";
 import { CommentCard } from "./comment-card";
 import { CommentInput } from "./comment-input";
 import { AgentLiveCard, TaskRunHistory } from "./agent-live-card";
@@ -586,6 +587,9 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
           </PropRow>
           <PropRow label="Project">
             <ProjectPicker projectId={issue.project_id} onUpdate={handleUpdateField} />
+          </PropRow>
+          <PropRow label="Pipeline">
+            <IssuePipelinePicker wsId={wsId} pipelineId={issue.pipeline_id} onUpdate={handleUpdateField} />
           </PropRow>
         </div>}
       </div>
