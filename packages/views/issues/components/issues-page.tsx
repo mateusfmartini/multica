@@ -13,7 +13,7 @@ import { BOARD_STATUSES } from "@multica/core/issues/config";
 import { useCurrentWorkspace } from "@multica/core/paths";
 import { WorkspaceAvatar } from "../../workspace/workspace-avatar";
 import { useWorkspaceId } from "@multica/core/hooks";
-import { issueListOptions, childIssueProgressOptions } from "@multica/core/issues/queries";
+import { issueListOptions, pipelineIssueListOptions, childIssueProgressOptions } from "@multica/core/issues/queries";
 import { useUpdateIssue } from "@multica/core/issues/mutations";
 import { usePipelineColumns } from "@multica/core/pipeline";
 import { useIssueSelectionStore } from "@multica/core/issues/stores/selection-store";
@@ -25,7 +25,19 @@ import { BatchActionToolbar } from "./batch-action-toolbar";
 
 export function IssuesPage() {
   const wsId = useWorkspaceId();
-  const { data: allIssues = [], isLoading: loading } = useQuery(issueListOptions(wsId));
+  const activePipelineId = useIssueViewStore((s) => s.activePipelineId);
+  const { data: activePipelineColumns } = usePipelineColumns(wsId, activePipelineId ?? "");
+  const columnStatusKeys = useMemo(
+    () => activePipelineColumns?.map((c) => c.status_key) ?? [],
+    [activePipelineColumns],
+  );
+
+  const { data: baseIssues = [], isLoading: baseLoading } = useQuery(issueListOptions(wsId));
+  const { data: pipelineIssues = [], isLoading: pipelineLoading } = useQuery(
+    pipelineIssueListOptions(wsId, activePipelineId ?? "", columnStatusKeys),
+  );
+  const allIssues = activePipelineId ? pipelineIssues : baseIssues;
+  const loading = activePipelineId ? pipelineLoading : baseLoading;
 
   const workspace = useCurrentWorkspace();
   const scope = useIssuesScopeStore((s) => s.scope);
@@ -37,10 +49,6 @@ export function IssuesPage() {
   const creatorFilters = useIssueViewStore((s) => s.creatorFilters);
   const projectFilters = useIssueViewStore((s) => s.projectFilters);
   const includeNoProject = useIssueViewStore((s) => s.includeNoProject);
-  const activePipelineId = useIssueViewStore((s) => s.activePipelineId);
-
-  const { data: activePipelineColumns } = usePipelineColumns(wsId, activePipelineId ?? "");
-
   // Clear filter state when switching between workspaces (URL-driven).
   useClearFiltersOnWorkspaceChange(useIssueViewStore, wsId);
 

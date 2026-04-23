@@ -92,6 +92,23 @@ export function myIssueListOptions(
   });
 }
 
+/** Fetches issues for a specific pipeline, per column status_key. */
+export function pipelineIssueListOptions(wsId: string, pipelineId: string, columnStatusKeys: string[]) {
+  return queryOptions({
+    queryKey: [...issueKeys.all(wsId), "pipeline", pipelineId, columnStatusKeys] as const,
+    queryFn: async () => {
+      if (!columnStatusKeys.length) return [];
+      const responses = await Promise.all(
+        columnStatusKeys.map((status) =>
+          api.listIssues({ pipeline_id: pipelineId, status, limit: 100, offset: 0 }),
+        ),
+      );
+      return responses.flatMap((r) => r.issues);
+    },
+    enabled: Boolean(wsId) && Boolean(pipelineId) && columnStatusKeys.length > 0,
+  });
+}
+
 export function issueDetailOptions(wsId: string, id: string) {
   return queryOptions({
     queryKey: issueKeys.detail(wsId, id),
