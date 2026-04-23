@@ -77,6 +77,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { issueListOptions, issueDetailOptions, childIssuesOptions, issueUsageOptions } from "@multica/core/issues/queries";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
 import { useUpdateIssue, useDeleteIssue } from "@multica/core/issues/mutations";
+import { usePipelineColumns } from "@multica/core/pipeline";
 import { useRecentIssuesStore } from "@multica/core/issues/stores";
 import { useIssueTimeline } from "../hooks/use-issue-timeline";
 import { useIssueReactions } from "../hooks/use-issue-reactions";
@@ -377,6 +378,11 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
     },
   });
 
+  const { data: detailPipelineColumns = [] } = usePipelineColumns(wsId, issue?.pipeline_id ?? "");
+  const activePipelineColumns = issue?.pipeline_id && detailPipelineColumns.length
+    ? [...detailPipelineColumns].sort((a, b) => a.position - b.position).map((c) => ({ status_key: c.status_key, label: c.label }))
+    : undefined;
+
   // Record recent visit
   const recordVisit = useRecentIssuesStore((s) => s.recordVisit);
   useEffect(() => {
@@ -574,7 +580,7 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
         </button>
         {propertiesOpen && <div className="space-y-0.5 pl-2">
           <PropRow label="Status">
-            <StatusPicker status={issue.status} onUpdate={handleUpdateField} align="start" />
+            <StatusPicker status={issue.status} onUpdate={handleUpdateField} align="start" pipelineColumns={activePipelineColumns} />
           </PropRow>
           <PropRow label="Priority">
             <PriorityPicker priority={issue.priority} onUpdate={handleUpdateField} align="start" />
