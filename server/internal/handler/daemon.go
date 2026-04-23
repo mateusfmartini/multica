@@ -686,6 +686,11 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 					resp.PipelineContext = pctx
+					// Also append pipeline context to agent instructions so existing daemon
+					// versions (which don't read pipeline_context) still inject it into AGENTS.md.
+					if resp.Agent != nil {
+						resp.Agent.Instructions += buildPipelineContextMD(pctx, cols)
+					}
 				}
 			}
 		}
@@ -1362,4 +1367,49 @@ func (h *Handler) GetIssueGCCheck(w http.ResponseWriter, r *http.Request) {
 		"status":     issue.Status,
 		"updated_at": issue.UpdatedAt.Time,
 	})
+}
+
+// buildPipelineContextMD renders pipeline column context as markdown appended to
+// agent instructions. This ensures existing daemon versions that don't parse
+// pipeline_context still receive this information through the instructions field.
+func buildPipelineContextMD(pctx *PipelineContextData, cols []db.PipelineColumn) string {
+	var b strings.Builder
+	b.WriteString("\n\n## Pipeline Context\n\n")
+	if pctx.CurrentColumnLabel != "" {
+		fmt.Fprintf(&b, "This issue is in pipeline column **%s**.\n\n", pctx.CurrentColumnLabel)
+	}
+	if pctx.Instructions != "" {
+		b.WriteString("### Column Instructions\n\n")
+		b.WriteString(pctx.Instructions)
+		b.WriteString("\n\n")
+	}
+	if len(pctx.AllowedTransitions) > 0 {
+		b.WriteString("### Allowed Status Transitions\n\n")
+		b.WriteString("Use `multica issue status <id> <status_key>` to move the issue to:\n\n")
+		for _, t := range pctx.AllowedTransitions {
+			label := t
+			for _, c := range cols {
+				if c.StatusKey == t {
+					label = c.Label
+					break
+				}
+			}
+			fmt.Fprintf(&b, "- `%s` (%s)\n", t, label)
+		}
+		b.WriteString("\n")
+	}
+	if len(cols) > 0 {
+		b.WriteString("### All Pipeline Columns\n\n")
+		b.WriteString("| Status Key | Label | Terminal |\n")
+		b.WriteString("|-----------|-------|----------|\n")
+		for _, c := range cols {
+			terminal := ""
+			if c.IsTerminal {
+				terminal = "✓"
+			}
+			fmt.Fprintf(&b, "| `%s` | %s | %s |\n", c.StatusKey, c.Label, terminal)
+		}
+		b.WriteString("\n")
+	}
+	return b.String()
 }
