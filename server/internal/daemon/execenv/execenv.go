@@ -14,11 +14,12 @@ import (
 
 // RepoContextForEnv describes a workspace repo available for checkout.
 type RepoContextForEnv struct {
-	URL          string // remote URL (empty for local-path repos)
-	Description  string // human-readable description
-	LocalPath    string // absolute local path (non-empty for local-path repos)
-	SourceBranch string // branch to check out (empty = default branch)
-	TargetBranch string // branch to commit work to (empty = no restriction)
+	URL          string            // remote URL (empty for local-path repos)
+	Description  string            // human-readable description
+	LocalPath    string            // absolute local path (non-empty for local-path repos)
+	SourceBranch string            // branch to check out (empty = default branch)
+	TargetBranch string            // branch to commit work to (empty = no restriction)
+	UserPaths    map[string]string // user_id -> local path override (informational; local_path is pre-resolved)
 }
 
 // PrepareParams holds all inputs needed to set up an execution environment.

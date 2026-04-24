@@ -1485,6 +1485,7 @@ func convertReposForEnv(repos []RepoData) []execenv.RepoContextForEnv {
 			LocalPath:    r.LocalPath,
 			SourceBranch: r.SourceBranch,
 			TargetBranch: r.TargetBranch,
+			UserPaths:    r.UserPaths,
 		}
 	}
 	return result

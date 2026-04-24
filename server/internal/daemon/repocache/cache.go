@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -305,8 +306,20 @@ func localRepoBranch(repoPath string) string {
 	return strings.TrimSpace(string(out))
 }
 
+// createLink creates a filesystem link from newPath pointing to oldPath.
+// On Windows, creates an NTFS junction point via mklink /J — no admin
+// privileges required for directory junctions, unlike symbolic links.
+// On all other platforms, creates a regular symbolic link.
+func createLink(oldPath, newPath string) error {
+	if runtime.GOOS == "windows" {
+		return exec.Command("cmd", "/c", "mklink", "/J", newPath, oldPath).Run()
+	}
+	return os.Symlink(oldPath, newPath)
+}
+
 // createLocalSymlink handles checkout for local-path repos: creates a symlink
-// in the workdir pointing at the absolute local path. Idempotent on reuse.
+// (or NTFS junction point on Windows) in the workdir pointing at the absolute
+// local path. Idempotent on reuse.
 func (c *Cache) createLocalSymlink(params WorktreeParams) (*WorktreeResult, error) {
 	localPath := params.LocalPath
 	if _, err := os.Stat(localPath); err != nil {
@@ -316,21 +329,44 @@ func (c *Cache) createLocalSymlink(params WorktreeParams) (*WorktreeResult, erro
 	dirName := filepath.Base(localPath)
 	symlinkPath := filepath.Join(params.WorkDir, dirName)
 
-	if existing, err := os.Readlink(symlinkPath); err == nil {
-		if existing == localPath {
-			c.logger.Info("repo checkout: local symlink already exists", "path", localPath, "symlink", symlinkPath)
-			return &WorktreeResult{Path: symlinkPath, BranchName: localRepoBranch(localPath)}, nil
+	if runtime.GOOS == "windows" {
+		// os.Readlink does not work reliably for NTFS junction points created
+		// with mklink /J. Use Stat to detect existence, and EvalSymlinks to
+		// verify the junction resolves to the expected target.
+		if info, err := os.Stat(symlinkPath); err == nil {
+			if !info.IsDir() {
+				return nil, fmt.Errorf("checkout path already exists and is not a directory: %s", symlinkPath)
+			}
+			absLocal, _ := filepath.Abs(localPath)
+			if resolved, err := filepath.EvalSymlinks(symlinkPath); err == nil {
+				absResolved, _ := filepath.Abs(resolved)
+				if absLocal == absResolved {
+					c.logger.Info("repo checkout: local junction already exists", "path", localPath, "junction", symlinkPath)
+					return &WorktreeResult{Path: symlinkPath, BranchName: localRepoBranch(localPath)}, nil
+				}
+			}
+			// Wrong target or unresolvable — remove and recreate.
+			if err := os.Remove(symlinkPath); err != nil {
+				return nil, fmt.Errorf("remove stale junction: %w", err)
+			}
 		}
-		// Points somewhere else — remove and re-create.
-		if err := os.Remove(symlinkPath); err != nil {
-			return nil, fmt.Errorf("remove stale symlink: %w", err)
+	} else {
+		if existing, err := os.Readlink(symlinkPath); err == nil {
+			if existing == localPath {
+				c.logger.Info("repo checkout: local symlink already exists", "path", localPath, "symlink", symlinkPath)
+				return &WorktreeResult{Path: symlinkPath, BranchName: localRepoBranch(localPath)}, nil
+			}
+			// Points somewhere else — remove and re-create.
+			if err := os.Remove(symlinkPath); err != nil {
+				return nil, fmt.Errorf("remove stale symlink: %w", err)
+			}
+		} else if _, err := os.Stat(symlinkPath); err == nil {
+			return nil, fmt.Errorf("checkout path already exists and is not a symlink: %s", symlinkPath)
 		}
-	} else if _, err := os.Stat(symlinkPath); err == nil {
-		return nil, fmt.Errorf("checkout path already exists and is not a symlink: %s", symlinkPath)
 	}
 
-	if err := os.Symlink(localPath, symlinkPath); err != nil {
-		return nil, fmt.Errorf("create symlink: %w", err)
+	if err := createLink(localPath, symlinkPath); err != nil {
+		return nil, fmt.Errorf("create link: %w", err)
 	}
 
 	branch := localRepoBranch(localPath)

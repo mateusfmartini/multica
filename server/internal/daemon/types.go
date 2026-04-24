@@ -18,11 +18,12 @@ type Runtime struct {
 
 // RepoData holds repository information from the workspace.
 type RepoData struct {
-	URL          string `json:"url,omitempty"`
-	Description  string `json:"description"`
-	LocalPath    string `json:"local_path,omitempty"`
-	SourceBranch string `json:"source_branch,omitempty"`
-	TargetBranch string `json:"target_branch,omitempty"`
+	URL          string            `json:"url,omitempty"`
+	Description  string            `json:"description"`
+	LocalPath    string            `json:"local_path,omitempty"`
+	SourceBranch string            `json:"source_branch,omitempty"`
+	TargetBranch string            `json:"target_branch,omitempty"`
+	UserPaths    map[string]string `json:"user_paths,omitempty"` // user_id -> local path override
 }
 
 // Task represents a claimed task from the server.

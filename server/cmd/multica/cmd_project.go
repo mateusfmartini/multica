@@ -626,20 +626,22 @@ type repoIdentifierInput struct {
 	Identifier   string // URL or local path
 	SourceBranch string
 	TargetBranch string
+	UserPaths    map[string]string // user_id -> local path override
 }
 
 // parseRepoInput parses a --repo flag value. Supports two formats:
 //
 //	"https://github.com/foo/bar"                   — plain identifier (backward-compatible)
-//	'{"url":"...","source_branch":"...","target_branch":"..."}'  — JSON with optional branches
+//	'{"url":"...","source_branch":"...","target_branch":"...","user_paths":{"uid":"/path"}}'  — JSON with optional branches and per-user paths
 func parseRepoInput(s string) (repoIdentifierInput, error) {
 	s = strings.TrimSpace(s)
 	if strings.HasPrefix(s, "{") {
 		var parsed struct {
-			URL          string `json:"url"`
-			LocalPath    string `json:"local_path"`
-			SourceBranch string `json:"source_branch"`
-			TargetBranch string `json:"target_branch"`
+			URL          string            `json:"url"`
+			LocalPath    string            `json:"local_path"`
+			SourceBranch string            `json:"source_branch"`
+			TargetBranch string            `json:"target_branch"`
+			UserPaths    map[string]string `json:"user_paths"`
 		}
 		if err := json.Unmarshal([]byte(s), &parsed); err != nil {
 			return repoIdentifierInput{}, fmt.Errorf("invalid JSON repo format: %w", err)
@@ -651,7 +653,7 @@ func parseRepoInput(s string) (repoIdentifierInput, error) {
 		if id == "" {
 			return repoIdentifierInput{}, fmt.Errorf("JSON repo must have a 'url' or 'local_path' field")
 		}
-		return repoIdentifierInput{Identifier: id, SourceBranch: parsed.SourceBranch, TargetBranch: parsed.TargetBranch}, nil
+		return repoIdentifierInput{Identifier: id, SourceBranch: parsed.SourceBranch, TargetBranch: parsed.TargetBranch, UserPaths: parsed.UserPaths}, nil
 	}
 	return repoIdentifierInput{Identifier: s}, nil
 }
@@ -699,6 +701,9 @@ func resolveRepoIdentifiers(ctx context.Context, client *cli.APIClient, identifi
 		}
 		if input.TargetBranch != "" {
 			entry["target_branch"] = input.TargetBranch
+		}
+		if len(input.UserPaths) > 0 {
+			entry["user_paths"] = input.UserPaths
 		}
 		result = append(result, entry)
 	}

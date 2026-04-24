@@ -66,11 +66,12 @@ func (h *Handler) loadProjectIssueStats(ctx context.Context, projectID pgtype.UU
 }
 
 type repoEntry struct {
-	URL          string `json:"url,omitempty"`
-	Description  string `json:"description"`
-	LocalPath    string `json:"local_path,omitempty"`
-	SourceBranch string `json:"source_branch,omitempty"`
-	TargetBranch string `json:"target_branch,omitempty"`
+	URL          string            `json:"url,omitempty"`
+	Description  string            `json:"description"`
+	LocalPath    string            `json:"local_path,omitempty"`
+	SourceBranch string            `json:"source_branch,omitempty"`
+	TargetBranch string            `json:"target_branch,omitempty"`
+	UserPaths    map[string]string `json:"user_paths,omitempty"` // user_id -> local path override
 }
 
 func repoEntryKey(r repoEntry) string {
