@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { ChevronRight, Maximize2, Minimize2, X as XIcon, UserMinus } from "lucide-react";
+import { ChevronRight, GitFork, Maximize2, Minimize2, X as XIcon, UserMinus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useCreateProject } from "@multica/core/projects/mutations";
 import {
@@ -14,7 +14,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { useCurrentWorkspace, useWorkspacePaths } from "@multica/core/paths";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
 import { useActorName } from "@multica/core/workspace/hooks";
-import type { ProjectStatus, ProjectPriority } from "@multica/core/types";
+import type { ProjectStatus, ProjectPriority, WorkspaceRepo } from "@multica/core/types";
 import { cn } from "@multica/ui/lib/utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@multica/ui/components/ui/dialog";
@@ -77,6 +77,10 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const [leadOpen, setLeadOpen] = useState(false);
   const [leadFilter, setLeadFilter] = useState("");
 
+  const [selectedRepos, setSelectedRepos] = useState<WorkspaceRepo[]>([]);
+  const [reposOpen, setReposOpen] = useState(false);
+  const wsRepos = workspace?.repos ?? [];
+
   const leadQuery = leadFilter.toLowerCase();
   const filteredMembers = members.filter((m) => m.name.toLowerCase().includes(leadQuery));
   const filteredAgents = agents.filter(
@@ -99,6 +103,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
         priority,
         lead_type: leadType,
         lead_id: leadId,
+        repos: selectedRepos.length > 0 ? selectedRepos : undefined,
       });
       onClose();
       toast.success("Project created");
@@ -340,6 +345,62 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
             </PopoverContent>
           </Popover>
         </div>
+
+          {wsRepos.length > 0 && (
+            <Popover open={reposOpen} onOpenChange={setReposOpen}>
+              <PopoverTrigger
+                render={
+                  <PillButton>
+                    <GitFork className="size-3" />
+                    {selectedRepos.length > 0
+                      ? `${selectedRepos.length} repo${selectedRepos.length > 1 ? "s" : ""}`
+                      : <span className="text-muted-foreground">Repositories</span>}
+                  </PillButton>
+                }
+              />
+              <PopoverContent align="start" className="w-72 p-1">
+                <div className="px-2 py-1 text-xs font-medium text-muted-foreground mb-1">
+                  Link repositories to this project
+                </div>
+                {wsRepos.map((repo) => {
+                  const repoKey = repo.local_path || repo.url || "";
+                  const label = repo.local_path ? `local: ${repo.local_path}` : (repo.url ?? "");
+                  const isSelected = selectedRepos.some(
+                    (r) => (r.local_path || r.url || "") === repoKey,
+                  );
+                  return (
+                    <label
+                      key={repoKey}
+                      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs cursor-pointer transition-colors ${isSelected ? "bg-accent/50" : "hover:bg-accent/30"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        className="shrink-0 accent-primary"
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedRepos([...selectedRepos, repo]);
+                          } else {
+                            setSelectedRepos(
+                              selectedRepos.filter(
+                                (r) => (r.local_path || r.url || "") !== repoKey,
+                              ),
+                            );
+                          }
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate">{label}</p>
+                        {repo.description && (
+                          <p className="text-muted-foreground truncate">{repo.description}</p>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+              </PopoverContent>
+            </Popover>
+          )}
 
         <div className="flex items-center justify-end px-4 py-3 border-t shrink-0">
           <Button size="sm" onClick={handleSubmit} disabled={!title.trim() || submitting}>

@@ -693,13 +693,13 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// If the issue belongs to a project, inject project-specific repos
-			// so the agent receives only the relevant repositories.
+			// If the issue belongs to a project with repos configured, scope the
+			// agent to only those repos — not all workspace repos.
 			if issue.ProjectID.Valid {
 				if proj, err := h.Queries.GetProject(r.Context(), issue.ProjectID); err == nil && proj.Repos != nil {
 					var projectRepos []RepoData
 					if json.Unmarshal(proj.Repos, &projectRepos) == nil && len(projectRepos) > 0 {
-						resp.Repos = mergeRepos(resp.Repos, projectRepos)
+						resp.Repos = projectRepos
 					}
 				}
 			}

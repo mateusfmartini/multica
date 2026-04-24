@@ -22,6 +22,7 @@ import { PROJECT_STATUS_ORDER, PROJECT_STATUS_CONFIG, PROJECT_PRIORITY_ORDER, PR
 import { BOARD_STATUSES } from "@multica/core/issues/config";
 import { createIssueViewStore } from "@multica/core/issues/stores/view-store";
 import { ViewStoreProvider, useViewStore } from "@multica/core/issues/stores/view-store-context";
+import { usePipelineColumns } from "@multica/core/pipeline";
 import { filterIssues } from "../../issues/utils/filter";
 import { getProjectIssueMetrics } from "./project-issue-metrics";
 import { ActorAvatar } from "../../common/actor-avatar";
@@ -110,6 +111,8 @@ function ProjectIssuesContent({
   const assigneeFilters = useViewStore((s) => s.assigneeFilters);
   const includeNoAssignee = useViewStore((s) => s.includeNoAssignee);
   const creatorFilters = useViewStore((s) => s.creatorFilters);
+  const activePipelineId = useViewStore((s) => s.activePipelineId);
+  const { data: activePipelineColumns } = usePipelineColumns(wsId, activePipelineId ?? "");
 
   const issues = useMemo(
     () => filterIssues(projectIssues, { statusFilters, priorityFilters, assigneeFilters, includeNoAssignee, creatorFilters, projectFilters: [], includeNoProject: false }),
@@ -118,16 +121,26 @@ function ProjectIssuesContent({
 
   const { data: childProgressMap = new Map() } = useQuery(childIssueProgressOptions(wsId));
 
-  const visibleStatuses = useMemo(() => {
+  const visibleStatuses = useMemo((): string[] => {
+    if (activePipelineId && activePipelineColumns?.length) {
+      return [...activePipelineColumns]
+        .sort((a, b) => a.position - b.position)
+        .map((c) => c.status_key);
+    }
     if (statusFilters.length > 0)
       return BOARD_STATUSES.filter((s) => statusFilters.includes(s));
     return BOARD_STATUSES;
-  }, [statusFilters]);
+  }, [activePipelineId, activePipelineColumns, statusFilters]);
 
-  const hiddenStatuses = useMemo(
-    () => BOARD_STATUSES.filter((s) => !visibleStatuses.includes(s)),
-    [visibleStatuses],
-  );
+  const hiddenStatuses = useMemo(() => {
+    if (activePipelineId) return [];
+    return BOARD_STATUSES.filter((s) => !visibleStatuses.includes(s));
+  }, [activePipelineId, visibleStatuses]);
+
+  const columnLabels = useMemo((): Record<string, string> | undefined => {
+    if (!activePipelineId || !activePipelineColumns?.length) return undefined;
+    return Object.fromEntries(activePipelineColumns.map((c) => [c.status_key, c.label]));
+  }, [activePipelineId, activePipelineColumns]);
 
   const updateIssueMutation = useUpdateIssue();
   const handleMoveIssue = useCallback(
@@ -164,6 +177,8 @@ function ProjectIssuesContent({
           issues={issues}
           visibleStatuses={visibleStatuses}
           hiddenStatuses={hiddenStatuses}
+          columnLabels={columnLabels}
+          activePipelineId={activePipelineId}
           onMoveIssue={handleMoveIssue}
           childProgressMap={childProgressMap}
           myIssuesScope={scope}
@@ -173,6 +188,8 @@ function ProjectIssuesContent({
         <ListView
           issues={issues}
           visibleStatuses={visibleStatuses}
+          columnLabels={columnLabels}
+          activePipelineId={activePipelineId}
           childProgressMap={childProgressMap}
           myIssuesScope={scope}
           myIssuesFilter={filter}

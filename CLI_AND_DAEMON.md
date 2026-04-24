@@ -542,6 +542,75 @@ multica autopilot trigger-delete <autopilot-id> <trigger-id>
 
 Only cron-based `schedule` triggers are currently exposed via the CLI. The data model also defines `webhook` and `api` kinds, but there is no server endpoint that fires them yet, so they're not surfaced here.
 
+## Pipelines
+
+Pipelines define custom status workflows with columns (stages). Each column has a status key, label, instructions for agents, and optional allowed transitions.
+
+### List Pipelines
+
+```bash
+multica pipeline list
+multica pipeline list --output json
+```
+
+### Get Pipeline
+
+```bash
+multica pipeline get <id>
+multica pipeline get <id> --output json
+```
+
+### Create Pipeline
+
+```bash
+multica pipeline create --name "SDD Flow"
+```
+
+Flags: `--name` (required), `--description`.
+
+### Update Pipeline
+
+```bash
+multica pipeline update <id> --name "New name"
+```
+
+### Set Default Pipeline
+
+```bash
+multica pipeline set-default <id>
+```
+
+Sets this pipeline as the default for the workspace. New issues will use this pipeline.
+
+### Delete Pipeline
+
+```bash
+multica pipeline delete <id>
+```
+
+### Pipeline Columns
+
+Each pipeline has columns representing status stages.
+
+```bash
+# List columns
+multica pipeline column list <pipeline-id>
+
+# Add a column
+multica pipeline column add <pipeline-id> --status-key "in_review" --label "In Review"
+
+# Update a column
+multica pipeline column update <pipeline-id> <status-key> --label "Under Review" --instructions "Check code quality"
+
+# Delete a column
+multica pipeline column delete <pipeline-id> <status-key>
+
+# Sync all columns from JSON (replaces existing)
+echo '[{"status_key":"todo","label":"To Do"},{"status_key":"done","label":"Done","is_terminal":true}]' | multica pipeline column sync <pipeline-id>
+```
+
+Column flags: `--status-key`, `--label`, `--instructions`, `--position`, `--is-terminal`, `--allowed-transitions` (comma-separated status keys).
+
 ## Other Commands
 
 ```bash
