@@ -794,7 +794,7 @@ type CreateIssueRequest struct {
 	PipelineID           *string  `json:"pipeline_id"`
 	DueDate              *string  `json:"due_date"`
 	AttachmentIDs        []string `json:"attachment_ids,omitempty"`
-	InheritParentWorkdir bool     `json:"inherit_parent_workdir,omitempty"`
+	InheritParentWorkdir *bool    `json:"inherit_parent_workdir,omitempty"`
 }
 
 func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
@@ -935,6 +935,8 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 	// Determine creator identity: agent (via X-Agent-ID header) or member.
 	creatorType, actualCreatorID := h.resolveActor(r, creatorID, workspaceID)
 
+	inheritParentWorkdir := req.InheritParentWorkdir == nil || *req.InheritParentWorkdir
+
 	issue, err := qtx.CreateIssue(r.Context(), db.CreateIssueParams{
 		WorkspaceID:          parseUUID(workspaceID),
 		Title:                req.Title,
@@ -951,7 +953,7 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		Number:               issueNumber,
 		ProjectID:            projectID,
 		PipelineID:           pipelineID,
-		InheritParentWorkdir: req.InheritParentWorkdir,
+		InheritParentWorkdir: inheritParentWorkdir,
 	})
 	if err != nil {
 		slog.Warn("create issue failed", append(logger.RequestAttrs(r), "error", err, "workspace_id", workspaceID)...)
