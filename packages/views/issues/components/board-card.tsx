@@ -7,8 +7,9 @@ import type { AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import type { Issue, UpdateIssueRequest } from "@multica/core/types";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useIssueActiveTask } from "@multica/core/issues/use-issue-active-task";
 import { ActorAvatar } from "../../common/actor-avatar";
 import { useUpdateIssue } from "@multica/core/issues/mutations";
 import { useWorkspacePaths } from "@multica/core/paths";
@@ -53,6 +54,7 @@ export const BoardCardContent = memo(function BoardCardContent({
   const storeProperties = useViewStore((s) => s.cardProperties);
   const priorityCfg = PRIORITY_CONFIG[issue.priority];
   const wsId = useWorkspaceId();
+  const { isAgentRunning } = useIssueActiveTask(issue.id);
   const { data: projects = [] } = useQuery({
     ...projectListOptions(wsId),
     enabled: storeProperties.project && !!issue.project_id,
@@ -78,7 +80,12 @@ export const BoardCardContent = memo(function BoardCardContent({
   const showChildProgress = storeProperties.childProgress && childProgress;
 
   return (
-    <div className="rounded-lg border-[0.5px] bg-card py-3 px-2.5 shadow-[0_3px_6px_-2px_rgba(0,0,0,0.02),0_1px_1px_0_rgba(0,0,0,0.04)] transition-shadow group-hover:shadow-sm">
+    <div className="relative rounded-lg border-[0.5px] bg-card py-3 px-2.5 shadow-[0_3px_6px_-2px_rgba(0,0,0,0.02),0_1px_1px_0_rgba(0,0,0,0.04)] transition-shadow group-hover:shadow-sm">
+      {isAgentRunning && (
+        <div className="absolute top-2 right-2" title="Agent running">
+          <Loader2 className="h-3 w-3 animate-spin text-success" />
+        </div>
+      )}
       {/* Row 1: Identifier */}
       <p className="text-xs text-muted-foreground">{issue.identifier}</p>
 

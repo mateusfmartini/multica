@@ -12,6 +12,8 @@ import { useViewStore } from "@multica/core/issues/stores/view-store-context";
 import { projectListOptions } from "@multica/core/projects/queries";
 import { PriorityIcon } from "./priority-icon";
 import { ProgressRing } from "./progress-ring";
+import { Loader2 } from "lucide-react";
+import { useIssueActiveTask } from "@multica/core/issues/use-issue-active-task";
 
 export interface ChildProgress {
   done: number;
@@ -47,6 +49,7 @@ export const ListRow = memo(function ListRow({
   const showChildProgress = storeProperties.childProgress && childProgress;
   const showAssignee = storeProperties.assignee && issue.assignee_type && issue.assignee_id;
   const showDueDate = storeProperties.dueDate && issue.due_date;
+  const { isAgentRunning } = useIssueActiveTask(issue.id);
 
   return (
     <div
@@ -72,8 +75,11 @@ export const ListRow = memo(function ListRow({
         href={p.issueDetail(issue.id)}
         className="flex flex-1 items-center gap-2 min-w-0"
       >
-        <span className="w-16 shrink-0 text-xs text-muted-foreground">
+        <span className="inline-flex w-16 shrink-0 items-center gap-1 text-xs text-muted-foreground">
           {issue.identifier}
+          {isAgentRunning && (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-success" aria-label="Agent running" />
+          )}
         </span>
         <span className="flex min-w-0 flex-1 items-center gap-1.5">
           <span className="truncate">{issue.title}</span>
