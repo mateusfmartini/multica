@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN custom_env JSONB NOT NULL DEFAULT '{}';

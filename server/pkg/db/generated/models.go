@@ -424,6 +424,7 @@ type User struct {
 	CloudWaitlistEmail      pgtype.Text        `json:"cloud_waitlist_email"`
 	CloudWaitlistReason     pgtype.Text        `json:"cloud_waitlist_reason"`
 	StarterContentState     pgtype.Text        `json:"starter_content_state"`
+	CustomEnv               []byte             `json:"custom_env"`
 }
 
 type VerificationCode struct {

@@ -55,3 +55,10 @@ UPDATE "user" SET
     updated_at = now()
 WHERE id = $1
 RETURNING *;
+
+-- name: SetUserCustomEnv :one
+UPDATE "user" SET
+    custom_env = $2,
+    updated_at = now()
+WHERE id = $1
+RETURNING *;

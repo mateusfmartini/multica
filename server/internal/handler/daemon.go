@@ -644,6 +644,19 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Load user env as middle layer: workspace < user < agent.
+	// Uses the issue creator when creator_type is "member".
+	var userEnv map[string]string
+	if task.IssueID.Valid {
+		if issue, err := h.Queries.GetIssue(r.Context(), task.IssueID); err == nil && issue.CreatorType == "member" && issue.CreatorID.Valid {
+			if user, err := h.Queries.GetUser(r.Context(), issue.CreatorID); err == nil && len(user.CustomEnv) > 0 {
+				if err := json.Unmarshal(user.CustomEnv, &userEnv); err != nil {
+					slog.Warn("failed to unmarshal user custom_env", "user_id", uuidToString(issue.CreatorID), "error", err)
+				}
+			}
+		}
+	}
+
 	if agent, err := h.Queries.GetAgent(r.Context(), task.AgentID); err == nil {
 		skills := h.TaskService.LoadAgentSkills(r.Context(), task.AgentID)
 		var agentEnv map[string]string
@@ -652,9 +665,12 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 				slog.Warn("failed to unmarshal agent custom_env", "agent_id", uuidToString(agent.ID), "error", err)
 			}
 		}
-		// Merge: workspace env is the base, agent env overwrites on conflict.
-		customEnv := make(map[string]string, len(wsEnv)+len(agentEnv))
+		// Merge: workspace < user < agent (higher scope wins on conflict).
+		customEnv := make(map[string]string, len(wsEnv)+len(userEnv)+len(agentEnv))
 		for k, v := range wsEnv {
+			customEnv[k] = v
+		}
+		for k, v := range userEnv {
 			customEnv[k] = v
 		}
 		for k, v := range agentEnv {

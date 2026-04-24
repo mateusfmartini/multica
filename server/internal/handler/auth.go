@@ -626,3 +626,69 @@ func (h *Handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, userToResponse(updatedUser))
 }
+
+type UserEnvResponse struct {
+	CustomEnv         map[string]string `json:"custom_env"`
+	CustomEnvRedacted bool              `json:"custom_env_redacted"`
+}
+
+func (h *Handler) GetUserEnv(w http.ResponseWriter, r *http.Request) {
+	userID, ok := requireUserID(w, r)
+	if !ok {
+		return
+	}
+	user, err := h.Queries.GetUser(r.Context(), parseUUID(userID))
+	if err != nil {
+		writeError(w, http.StatusNotFound, "user not found")
+		return
+	}
+	var customEnv map[string]string
+	if len(user.CustomEnv) > 0 {
+		json.Unmarshal(user.CustomEnv, &customEnv)
+	}
+	if customEnv == nil {
+		customEnv = map[string]string{}
+	}
+	masked := make(map[string]string, len(customEnv))
+	for k := range customEnv {
+		masked[k] = "***"
+	}
+	writeJSON(w, http.StatusOK, UserEnvResponse{CustomEnv: masked, CustomEnvRedacted: true})
+}
+
+type UpdateUserEnvRequest struct {
+	CustomEnv map[string]string `json:"custom_env"`
+}
+
+func (h *Handler) UpdateUserEnv(w http.ResponseWriter, r *http.Request) {
+	userID, ok := requireUserID(w, r)
+	if !ok {
+		return
+	}
+	var req UpdateUserEnvRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	ce, _ := json.Marshal(req.CustomEnv)
+	user, err := h.Queries.SetUserCustomEnv(r.Context(), db.SetUserCustomEnvParams{
+		ID:        parseUUID(userID),
+		CustomEnv: ce,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update env")
+		return
+	}
+	var customEnv map[string]string
+	if len(user.CustomEnv) > 0 {
+		json.Unmarshal(user.CustomEnv, &customEnv)
+	}
+	if customEnv == nil {
+		customEnv = map[string]string{}
+	}
+	masked := make(map[string]string, len(customEnv))
+	for k := range customEnv {
+		masked[k] = "***"
+	}
+	writeJSON(w, http.StatusOK, UserEnvResponse{CustomEnv: masked, CustomEnvRedacted: true})
+}
