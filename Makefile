@@ -219,6 +219,17 @@ daemon-local-install:
 	cd server && go build -ldflags "-X main.version=$$VERSION -X main.commit=$$COMMIT -X main.date=$$DATE" -o $(HOME)/.local/bin/multica ./cmd/multica; \
 	echo "Installed local daemon CLI to $(HOME)/.local/bin/multica ($$VERSION)"
 
+daemon-dist-all: daemon-linux-build daemon-windows-build
+
+daemon-linux-build:
+	mkdir -p $(HOME)/.local/share/multica/dist
+	@VERSION="$$(git describe --tags --always --dirty 2>/dev/null || echo dev)"; \
+	COMMIT="$$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"; \
+	DATE="$$(date -u '+%Y-%m-%dT%H:%M:%SZ')"; \
+	cd server && CGO_ENABLED=0 go build -ldflags "-X main.version=$$VERSION -X main.commit=$$COMMIT -X main.date=$$DATE" -o $(HOME)/.local/share/multica/dist/multica-linux-amd64 ./cmd/multica; \
+	cp $(HOME)/.local/share/multica/dist/multica-linux-amd64 $(HOME)/git/others/multica/dist/multica-linux-amd64; \
+	echo "Built Linux CLI to $(HOME)/.local/share/multica/dist/multica-linux-amd64 ($$VERSION)"
+
 daemon-windows-build:
 	mkdir -p $(HOME)/.local/share/multica/dist
 	@VERSION="$$(git describe --tags --always --dirty 2>/dev/null || echo dev)"; \
