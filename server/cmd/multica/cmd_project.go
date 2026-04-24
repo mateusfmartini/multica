@@ -113,6 +113,7 @@ func init() {
 	projectCreateCmd.Flags().String("status", "", "Project status")
 	projectCreateCmd.Flags().String("icon", "", "Project icon (emoji)")
 	projectCreateCmd.Flags().String("lead", "", "Lead name (member or agent)")
+	projectCreateCmd.Flags().StringArray("repo", nil, "Repository URL or local path to link (repeatable)")
 	projectCreateCmd.Flags().String("output", "json", "Output format: table or json")
 
 	// project update
@@ -121,6 +122,7 @@ func init() {
 	projectUpdateCmd.Flags().String("status", "", "New status")
 	projectUpdateCmd.Flags().String("icon", "", "New icon (emoji)")
 	projectUpdateCmd.Flags().String("lead", "", "New lead name (member or agent)")
+	projectUpdateCmd.Flags().StringArray("repo", nil, "Set repositories linked to this project (URL or local path, repeatable); replaces existing list")
 	projectUpdateCmd.Flags().String("output", "json", "Output format: table or json")
 
 	// project delete
@@ -265,6 +267,13 @@ func runProjectCreate(cmd *cobra.Command, _ []string) error {
 		body["lead_type"] = aType
 		body["lead_id"] = aID
 	}
+	if repos, _ := cmd.Flags().GetStringArray("repo"); len(repos) > 0 {
+		repoObjs, err := resolveRepoIdentifiers(ctx, client, repos)
+		if err != nil {
+			return err
+		}
+		body["repos"] = repoObjs
+	}
 
 	var result map[string]any
 	if err := client.PostJSON(ctx, "/api/projects", body, &result); err != nil {
@@ -321,9 +330,20 @@ func runProjectUpdate(cmd *cobra.Command, args []string) error {
 		body["lead_type"] = aType
 		body["lead_id"] = aID
 	}
+	if cmd.Flags().Changed("repo") {
+		repos, _ := cmd.Flags().GetStringArray("repo")
+		repoObjs, err := resolveRepoIdentifiers(ctx, client, repos)
+		if err != nil {
+			return err
+		}
+		if repoObjs == nil {
+			repoObjs = []map[string]any{}
+		}
+		body["repos"] = repoObjs
+	}
 
 	if len(body) == 0 {
-		return fmt.Errorf("no fields to update; use flags like --title, --status, --description, --icon, --lead")
+		return fmt.Errorf("no fields to update; use flags like --title, --status, --description, --icon, --lead, --repo")
 	}
 
 	var result map[string]any
@@ -473,7 +493,7 @@ func runProjectRepoAdd(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	var ws map[string]any
-	if err := client.GetJSON(ctx, "/api/workspace", &ws); err != nil {
+	if err := client.GetJSON(ctx, "/api/workspaces/"+client.WorkspaceID, &ws); err != nil {
 		return fmt.Errorf("get workspace: %w", err)
 	}
 	wsRepos, _ := ws["repos"].([]any)
@@ -589,6 +609,45 @@ func runProjectRepoRemove(cmd *cobra.Command, args []string) error {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// resolveRepoIdentifiers resolves a list of URL/local-path strings against the
+// workspace repo registry and returns the repo objects ready for the API payload.
+func resolveRepoIdentifiers(ctx context.Context, client *cli.APIClient, identifiers []string) ([]map[string]any, error) {
+	var ws map[string]any
+	if err := client.GetJSON(ctx, "/api/workspaces/"+client.WorkspaceID, &ws); err != nil {
+		return nil, fmt.Errorf("get workspace: %w", err)
+	}
+	wsRepos, _ := ws["repos"].([]any)
+	wsRepoMap := make(map[string]map[string]any, len(wsRepos))
+	for _, raw := range wsRepos {
+		r, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		key := strVal(r, "local_path")
+		if key == "" {
+			key = strVal(r, "url")
+		}
+		if key != "" {
+			wsRepoMap[key] = r
+		}
+	}
+	result := make([]map[string]any, 0, len(identifiers))
+	for _, id := range identifiers {
+		r, ok := wsRepoMap[id]
+		if !ok {
+			return nil, fmt.Errorf("repository %s is not configured in this workspace — add it in Settings → Repositories first", id)
+		}
+		entry := map[string]any{"description": strVal(r, "description")}
+		if lp := strVal(r, "local_path"); lp != "" {
+			entry["local_path"] = lp
+		} else {
+			entry["url"] = strVal(r, "url")
+		}
+		result = append(result, entry)
+	}
+	return result, nil
+}
 
 func formatLead(project map[string]any) string {
 	lType := strVal(project, "lead_type")
