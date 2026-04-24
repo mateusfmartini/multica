@@ -6,6 +6,11 @@ export interface WorkspaceRepo {
   local_path?: string;
 }
 
+export interface ProjectRepo extends WorkspaceRepo {
+  source_branch?: string;
+  target_branch?: string;
+}
+
 export interface Workspace {
   id: string;
   name: string;

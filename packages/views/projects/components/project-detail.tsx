@@ -547,48 +547,86 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             const displayLabel = wsRepo.local_path
               ? `local: ${wsRepo.local_path}`
               : (wsRepo.url ?? "");
-            const isLinked = (project.repos ?? []).some(
+            const linkedRepo = (project.repos ?? []).find(
               (r) => (r.local_path || r.url || "") === repoKey,
             );
+            const isLinked = !!linkedRepo;
             return (
-              <label
-                key={repoKey}
-                className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs cursor-pointer transition-colors ${isLinked ? "bg-accent/50" : "hover:bg-accent/30"}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isLinked}
-                  disabled={!canManageWorkspace}
-                  className="shrink-0 accent-primary"
-                  onChange={(e) => {
-                    const current = project.repos ?? [];
-                    if (e.target.checked) {
-                      handleUpdateField({
-                        repos: [
-                          ...current,
-                          {
-                            url: wsRepo.url,
-                            local_path: wsRepo.local_path,
-                            description: wsRepo.description,
-                          },
-                        ],
-                      });
-                    } else {
-                      handleUpdateField({
-                        repos: current.filter(
-                          (r) => (r.local_path || r.url || "") !== repoKey,
-                        ),
-                      });
-                    }
-                  }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="truncate">{displayLabel}</p>
-                  {wsRepo.description && (
-                    <p className="text-muted-foreground truncate">{wsRepo.description}</p>
-                  )}
-                </div>
-              </label>
+              <div key={repoKey} className={`rounded-md px-2 py-1.5 transition-colors ${isLinked ? "bg-accent/50" : "hover:bg-accent/30"}`}>
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isLinked}
+                    disabled={!canManageWorkspace}
+                    className="shrink-0 accent-primary"
+                    onChange={(e) => {
+                      const current = project.repos ?? [];
+                      if (e.target.checked) {
+                        handleUpdateField({
+                          repos: [
+                            ...current,
+                            {
+                              url: wsRepo.url,
+                              local_path: wsRepo.local_path,
+                              description: wsRepo.description,
+                            },
+                          ],
+                        });
+                      } else {
+                        handleUpdateField({
+                          repos: current.filter(
+                            (r) => (r.local_path || r.url || "") !== repoKey,
+                          ),
+                        });
+                      }
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate">{displayLabel}</p>
+                    {wsRepo.description && (
+                      <p className="text-muted-foreground truncate">{wsRepo.description}</p>
+                    )}
+                  </div>
+                </label>
+                {isLinked && canManageWorkspace && (
+                  <div className="mt-1.5 ml-5 space-y-1">
+                    <input
+                      type="text"
+                      placeholder="Source branch (checkout)"
+                      defaultValue={linkedRepo?.source_branch ?? ""}
+                      className="w-full bg-background border rounded px-1.5 py-0.5 text-xs placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                      onBlur={(e) => {
+                        const val = e.target.value.trim() || undefined;
+                        const current = project.repos ?? [];
+                        handleUpdateField({
+                          repos: current.map((r) =>
+                            (r.local_path || r.url || "") === repoKey
+                              ? { ...r, source_branch: val }
+                              : r,
+                          ),
+                        });
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Target branch (commit)"
+                      defaultValue={linkedRepo?.target_branch ?? ""}
+                      className="w-full bg-background border rounded px-1.5 py-0.5 text-xs placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                      onBlur={(e) => {
+                        const val = e.target.value.trim() || undefined;
+                        const current = project.repos ?? [];
+                        handleUpdateField({
+                          repos: current.map((r) =>
+                            (r.local_path || r.url || "") === repoKey
+                              ? { ...r, target_branch: val }
+                              : r,
+                          ),
+                        });
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>}

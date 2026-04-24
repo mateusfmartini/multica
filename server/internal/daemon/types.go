@@ -18,9 +18,11 @@ type Runtime struct {
 
 // RepoData holds repository information from the workspace.
 type RepoData struct {
-	URL         string `json:"url,omitempty"`
-	Description string `json:"description"`
-	LocalPath   string `json:"local_path,omitempty"`
+	URL          string `json:"url,omitempty"`
+	Description  string `json:"description"`
+	LocalPath    string `json:"local_path,omitempty"`
+	SourceBranch string `json:"source_branch,omitempty"`
+	TargetBranch string `json:"target_branch,omitempty"`
 }
 
 // Task represents a claimed task from the server.

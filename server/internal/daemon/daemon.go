@@ -1479,7 +1479,13 @@ func convertReposForEnv(repos []RepoData) []execenv.RepoContextForEnv {
 	}
 	result := make([]execenv.RepoContextForEnv, len(repos))
 	for i, r := range repos {
-		result[i] = execenv.RepoContextForEnv{URL: r.URL, Description: r.Description, LocalPath: r.LocalPath}
+		result[i] = execenv.RepoContextForEnv{
+			URL:          r.URL,
+			Description:  r.Description,
+			LocalPath:    r.LocalPath,
+			SourceBranch: r.SourceBranch,
+			TargetBranch: r.TargetBranch,
+		}
 	}
 	return result
 }

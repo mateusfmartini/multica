@@ -115,6 +115,24 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 		b.WriteString("\nFor remote repos, the checkout command clones and creates a git worktree with a dedicated branch.\n")
 		b.WriteString("For local repos, the checkout command creates a symlink to the local directory — git operations work normally.\n")
 		b.WriteString("You can check out one or more repos as needed.\n\n")
+
+		// Emit per-repo branch instructions when configured.
+		for _, repo := range ctx.Repos {
+			if repo.SourceBranch == "" && repo.TargetBranch == "" {
+				continue
+			}
+			identifier := repo.LocalPath
+			if identifier == "" {
+				identifier = repo.URL
+			}
+			if repo.SourceBranch != "" {
+				fmt.Fprintf(&b, "When checking out `%s`, use branch `%s`.\n", identifier, repo.SourceBranch)
+			}
+			if repo.TargetBranch != "" {
+				fmt.Fprintf(&b, "Commit all changes to `%s` to branch `%s` before finishing.\n", identifier, repo.TargetBranch)
+			}
+		}
+		b.WriteString("\n")
 	}
 
 	b.WriteString("### Workflow\n\n")

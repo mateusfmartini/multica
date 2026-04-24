@@ -14,7 +14,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { useCurrentWorkspace, useWorkspacePaths } from "@multica/core/paths";
 import { memberListOptions, agentListOptions } from "@multica/core/workspace/queries";
 import { useActorName } from "@multica/core/workspace/hooks";
-import type { ProjectStatus, ProjectPriority, WorkspaceRepo } from "@multica/core/types";
+import type { ProjectStatus, ProjectPriority, ProjectRepo } from "@multica/core/types";
 import { cn } from "@multica/ui/lib/utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@multica/ui/components/ui/dialog";
@@ -77,7 +77,7 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
   const [leadOpen, setLeadOpen] = useState(false);
   const [leadFilter, setLeadFilter] = useState("");
 
-  const [selectedRepos, setSelectedRepos] = useState<WorkspaceRepo[]>([]);
+  const [selectedRepos, setSelectedRepos] = useState<ProjectRepo[]>([]);
   const [reposOpen, setReposOpen] = useState(false);
   const wsRepos = workspace?.repos ?? [];
 
@@ -365,37 +365,72 @@ export function CreateProjectModal({ onClose }: { onClose: () => void }) {
                 {wsRepos.map((repo) => {
                   const repoKey = repo.local_path || repo.url || "";
                   const label = repo.local_path ? `local: ${repo.local_path}` : (repo.url ?? "");
-                  const isSelected = selectedRepos.some(
+                  const selectedRepo = selectedRepos.find(
                     (r) => (r.local_path || r.url || "") === repoKey,
                   );
+                  const isSelected = !!selectedRepo;
                   return (
-                    <label
+                    <div
                       key={repoKey}
-                      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs cursor-pointer transition-colors ${isSelected ? "bg-accent/50" : "hover:bg-accent/30"}`}
+                      className={`rounded-md px-2 py-1.5 transition-colors ${isSelected ? "bg-accent/50" : "hover:bg-accent/30"}`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        className="shrink-0 accent-primary"
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedRepos([...selectedRepos, repo]);
-                          } else {
-                            setSelectedRepos(
-                              selectedRepos.filter(
-                                (r) => (r.local_path || r.url || "") !== repoKey,
-                              ),
-                            );
-                          }
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="truncate">{label}</p>
-                        {repo.description && (
-                          <p className="text-muted-foreground truncate">{repo.description}</p>
-                        )}
-                      </div>
-                    </label>
+                      <label className="flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          className="shrink-0 accent-primary"
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRepos([...selectedRepos, { ...repo }]);
+                            } else {
+                              setSelectedRepos(
+                                selectedRepos.filter(
+                                  (r) => (r.local_path || r.url || "") !== repoKey,
+                                ),
+                              );
+                            }
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate">{label}</p>
+                          {repo.description && (
+                            <p className="text-muted-foreground truncate">{repo.description}</p>
+                          )}
+                        </div>
+                      </label>
+                      {isSelected && (
+                        <div className="mt-1.5 ml-5 space-y-1">
+                          <input
+                            type="text"
+                            placeholder="Source branch (checkout)"
+                            defaultValue={selectedRepo?.source_branch ?? ""}
+                            className="w-full bg-background border rounded px-1.5 py-0.5 text-xs placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                            onBlur={(e) => {
+                              const val = e.target.value.trim() || undefined;
+                              setSelectedRepos(selectedRepos.map((r) =>
+                                (r.local_path || r.url || "") === repoKey
+                                  ? { ...r, source_branch: val }
+                                  : r,
+                              ));
+                            }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Target branch (commit)"
+                            defaultValue={selectedRepo?.target_branch ?? ""}
+                            className="w-full bg-background border rounded px-1.5 py-0.5 text-xs placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring"
+                            onBlur={(e) => {
+                              const val = e.target.value.trim() || undefined;
+                              setSelectedRepos(selectedRepos.map((r) =>
+                                (r.local_path || r.url || "") === repoKey
+                                  ? { ...r, target_branch: val }
+                                  : r,
+                              ));
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </PopoverContent>

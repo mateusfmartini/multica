@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -136,6 +137,8 @@ func init() {
 
 	// project repo add
 	projectRepoAddCmd.Flags().String("path", "", "Absolute local path to the repository (alternative to url positional arg)")
+	projectRepoAddCmd.Flags().String("source-branch", "", "Branch to check out when working on this repo (optional)")
+	projectRepoAddCmd.Flags().String("target-branch", "", "Branch to commit all work to in this repo (optional)")
 
 	// project repo remove
 	// no extra flags needed
@@ -465,6 +468,8 @@ func runProjectRepoList(cmd *cobra.Command, args []string) error {
 func runProjectRepoAdd(cmd *cobra.Command, args []string) error {
 	projectID := args[0]
 	localPath, _ := cmd.Flags().GetString("path")
+	sourceBranch, _ := cmd.Flags().GetString("source-branch")
+	targetBranch, _ := cmd.Flags().GetString("target-branch")
 
 	var repoURL string
 	if len(args) >= 2 {
@@ -544,6 +549,12 @@ func runProjectRepoAdd(cmd *cobra.Command, args []string) error {
 	} else {
 		newRepo = map[string]any{"url": repoURL, "description": wsDesc}
 	}
+	if sourceBranch != "" {
+		newRepo["source_branch"] = sourceBranch
+	}
+	if targetBranch != "" {
+		newRepo["target_branch"] = targetBranch
+	}
 	repos = append(repos, newRepo)
 
 	body := map[string]any{"repos": repos}
@@ -610,8 +621,43 @@ func runProjectRepoRemove(cmd *cobra.Command, args []string) error {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// resolveRepoIdentifiers resolves a list of URL/local-path strings against the
-// workspace repo registry and returns the repo objects ready for the API payload.
+// repoIdentifierInput represents a parsed --repo flag value.
+type repoIdentifierInput struct {
+	Identifier   string // URL or local path
+	SourceBranch string
+	TargetBranch string
+}
+
+// parseRepoInput parses a --repo flag value. Supports two formats:
+//
+//	"https://github.com/foo/bar"                   — plain identifier (backward-compatible)
+//	'{"url":"...","source_branch":"...","target_branch":"..."}'  — JSON with optional branches
+func parseRepoInput(s string) (repoIdentifierInput, error) {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "{") {
+		var parsed struct {
+			URL          string `json:"url"`
+			LocalPath    string `json:"local_path"`
+			SourceBranch string `json:"source_branch"`
+			TargetBranch string `json:"target_branch"`
+		}
+		if err := json.Unmarshal([]byte(s), &parsed); err != nil {
+			return repoIdentifierInput{}, fmt.Errorf("invalid JSON repo format: %w", err)
+		}
+		id := parsed.LocalPath
+		if id == "" {
+			id = parsed.URL
+		}
+		if id == "" {
+			return repoIdentifierInput{}, fmt.Errorf("JSON repo must have a 'url' or 'local_path' field")
+		}
+		return repoIdentifierInput{Identifier: id, SourceBranch: parsed.SourceBranch, TargetBranch: parsed.TargetBranch}, nil
+	}
+	return repoIdentifierInput{Identifier: s}, nil
+}
+
+// resolveRepoIdentifiers resolves a list of URL/local-path strings (or JSON objects)
+// against the workspace repo registry and returns the repo objects ready for the API payload.
 func resolveRepoIdentifiers(ctx context.Context, client *cli.APIClient, identifiers []string) ([]map[string]any, error) {
 	var ws map[string]any
 	if err := client.GetJSON(ctx, "/api/workspaces/"+client.WorkspaceID, &ws); err != nil {
@@ -633,16 +679,26 @@ func resolveRepoIdentifiers(ctx context.Context, client *cli.APIClient, identifi
 		}
 	}
 	result := make([]map[string]any, 0, len(identifiers))
-	for _, id := range identifiers {
-		r, ok := wsRepoMap[id]
+	for _, raw := range identifiers {
+		input, err := parseRepoInput(raw)
+		if err != nil {
+			return nil, err
+		}
+		r, ok := wsRepoMap[input.Identifier]
 		if !ok {
-			return nil, fmt.Errorf("repository %s is not configured in this workspace — add it in Settings → Repositories first", id)
+			return nil, fmt.Errorf("repository %s is not configured in this workspace — add it in Settings → Repositories first", input.Identifier)
 		}
 		entry := map[string]any{"description": strVal(r, "description")}
 		if lp := strVal(r, "local_path"); lp != "" {
 			entry["local_path"] = lp
 		} else {
 			entry["url"] = strVal(r, "url")
+		}
+		if input.SourceBranch != "" {
+			entry["source_branch"] = input.SourceBranch
+		}
+		if input.TargetBranch != "" {
+			entry["target_branch"] = input.TargetBranch
 		}
 		result = append(result, entry)
 	}
