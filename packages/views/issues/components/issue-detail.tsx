@@ -597,6 +597,32 @@ export function IssueDetail({ issueId, onDelete, defaultSidebarOpen = true, layo
           <PropRow label="Pipeline">
             <IssuePipelinePicker wsId={wsId} pipelineId={issue.pipeline_id} onUpdate={handleUpdateField} />
           </PropRow>
+          {issue.parent_issue_id && (
+            <PropRow label="Inherit workdir">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateField({ inherit_parent_workdir: !issue.inherit_parent_workdir })}
+                      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors cursor-pointer ${issue.inherit_parent_workdir ? "text-primary" : "text-muted-foreground"}`}
+                    >
+                      <Checkbox
+                        checked={issue.inherit_parent_workdir}
+                        className="pointer-events-none size-3"
+                      />
+                      {issue.inherit_parent_workdir ? "On" : "Off"}
+                    </button>
+                  }
+                />
+                <TooltipContent side="top">
+                  {issue.inherit_parent_workdir
+                    ? "Reusing parent's working directory"
+                    : "Using an isolated directory"}
+                </TooltipContent>
+              </Tooltip>
+            </PropRow>
+          )}
         </div>}
       </div>
 

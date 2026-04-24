@@ -50,6 +50,7 @@ UPDATE issue SET
     parent_issue_id = sqlc.narg('parent_issue_id'),
     project_id = sqlc.narg('project_id'),
     pipeline_id = sqlc.narg('pipeline_id'),
+    inherit_parent_workdir = COALESCE(sqlc.narg('inherit_parent_workdir'), inherit_parent_workdir),
     updated_at = now()
 WHERE id = $1
 RETURNING *;

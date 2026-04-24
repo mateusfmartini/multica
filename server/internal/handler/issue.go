@@ -46,7 +46,8 @@ type IssueResponse struct {
 	// ProjectRepos is populated on GetIssue when the issue belongs to a project
 	// with repositories configured, so agents can discover repos without a
 	// separate project lookup.
-	ProjectRepos       []RepoData              `json:"project_repos,omitempty"`
+	ProjectRepos           []RepoData              `json:"project_repos,omitempty"`
+	InheritParentWorkdir   bool                    `json:"inherit_parent_workdir"`
 }
 
 func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
@@ -64,13 +65,14 @@ func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
 		AssigneeID:    uuidToPtr(i.AssigneeID),
 		CreatorType:   i.CreatorType,
 		CreatorID:     uuidToString(i.CreatorID),
-		ParentIssueID: uuidToPtr(i.ParentIssueID),
-		ProjectID:     uuidToPtr(i.ProjectID),
-		PipelineID:    uuidToPtr(i.PipelineID),
-		Position:      i.Position,
-		DueDate:       timestampToPtr(i.DueDate),
-		CreatedAt:     timestampToString(i.CreatedAt),
-		UpdatedAt:     timestampToString(i.UpdatedAt),
+		ParentIssueID:        uuidToPtr(i.ParentIssueID),
+		ProjectID:            uuidToPtr(i.ProjectID),
+		PipelineID:           uuidToPtr(i.PipelineID),
+		Position:             i.Position,
+		DueDate:              timestampToPtr(i.DueDate),
+		CreatedAt:            timestampToString(i.CreatedAt),
+		UpdatedAt:            timestampToString(i.UpdatedAt),
+		InheritParentWorkdir: i.InheritParentWorkdir,
 	}
 }
 
@@ -1010,9 +1012,10 @@ type UpdateIssueRequest struct {
 	AssigneeID         *string  `json:"assignee_id"`
 	Position           *float64 `json:"position"`
 	DueDate            *string  `json:"due_date"`
-	ParentIssueID      *string  `json:"parent_issue_id"`
-	ProjectID          *string  `json:"project_id"`
-	PipelineID         *string  `json:"pipeline_id"`
+	ParentIssueID        *string `json:"parent_issue_id"`
+	ProjectID            *string `json:"project_id"`
+	PipelineID           *string `json:"pipeline_id"`
+	InheritParentWorkdir *bool   `json:"inherit_parent_workdir"`
 }
 
 func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
@@ -1142,6 +1145,9 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		} else {
 			params.PipelineID = pgtype.UUID{Valid: false}
 		}
+	}
+	if req.InheritParentWorkdir != nil {
+		params.InheritParentWorkdir = pgtype.Bool{Bool: *req.InheritParentWorkdir, Valid: true}
 	}
 
 	// Enforce agent visibility: private agents can only be assigned by owner/admin.

@@ -38,6 +38,7 @@ export interface Issue {
   pipeline_id: string | null;
   position: number;
   due_date: string | null;
+  inherit_parent_workdir: boolean;
   reactions?: IssueReaction[];
   created_at: string;
   updated_at: string;

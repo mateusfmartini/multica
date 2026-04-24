@@ -708,24 +708,26 @@ UPDATE issue SET
     parent_issue_id = $10,
     project_id = $11,
     pipeline_id = $12,
+    inherit_parent_workdir = COALESCE($13, inherit_parent_workdir),
     updated_at = now()
 WHERE id = $1
 RETURNING id, workspace_id, title, description, status, priority, assignee_type, assignee_id, creator_type, creator_id, parent_issue_id, acceptance_criteria, context_refs, position, due_date, created_at, updated_at, number, project_id, origin_type, origin_id, first_executed_at, pipeline_id, inherit_parent_workdir
 `
 
 type UpdateIssueParams struct {
-	ID            pgtype.UUID        `json:"id"`
-	Title         pgtype.Text        `json:"title"`
-	Description   pgtype.Text        `json:"description"`
-	Status        pgtype.Text        `json:"status"`
-	Priority      pgtype.Text        `json:"priority"`
-	AssigneeType  pgtype.Text        `json:"assignee_type"`
-	AssigneeID    pgtype.UUID        `json:"assignee_id"`
-	Position      pgtype.Float8      `json:"position"`
-	DueDate       pgtype.Timestamptz `json:"due_date"`
-	ParentIssueID pgtype.UUID        `json:"parent_issue_id"`
-	ProjectID     pgtype.UUID        `json:"project_id"`
-	PipelineID    pgtype.UUID        `json:"pipeline_id"`
+	ID                   pgtype.UUID        `json:"id"`
+	Title                pgtype.Text        `json:"title"`
+	Description          pgtype.Text        `json:"description"`
+	Status               pgtype.Text        `json:"status"`
+	Priority             pgtype.Text        `json:"priority"`
+	AssigneeType         pgtype.Text        `json:"assignee_type"`
+	AssigneeID           pgtype.UUID        `json:"assignee_id"`
+	Position             pgtype.Float8      `json:"position"`
+	DueDate              pgtype.Timestamptz `json:"due_date"`
+	ParentIssueID        pgtype.UUID        `json:"parent_issue_id"`
+	ProjectID            pgtype.UUID        `json:"project_id"`
+	PipelineID           pgtype.UUID        `json:"pipeline_id"`
+	InheritParentWorkdir pgtype.Bool        `json:"inherit_parent_workdir"`
 }
 
 func (q *Queries) UpdateIssue(ctx context.Context, arg UpdateIssueParams) (Issue, error) {
@@ -742,6 +744,7 @@ func (q *Queries) UpdateIssue(ctx context.Context, arg UpdateIssueParams) (Issue
 		arg.ParentIssueID,
 		arg.ProjectID,
 		arg.PipelineID,
+		arg.InheritParentWorkdir,
 	)
 	var i Issue
 	err := row.Scan(

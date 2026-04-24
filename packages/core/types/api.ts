@@ -15,6 +15,7 @@ export interface CreateIssueRequest {
   pipeline_id?: string;
   due_date?: string;
   attachment_ids?: string[];
+  inherit_parent_workdir?: boolean;
 }
 
 export interface UpdateIssueRequest {
@@ -29,6 +30,7 @@ export interface UpdateIssueRequest {
   parent_issue_id?: string | null;
   project_id?: string | null;
   pipeline_id?: string | null;
+  inherit_parent_workdir?: boolean;
 }
 
 export interface ListIssuesParams {

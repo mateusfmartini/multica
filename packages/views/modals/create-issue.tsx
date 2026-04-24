@@ -26,6 +26,7 @@ import { usePipelineColumns } from "@multica/core/pipeline";
 import { useFileUpload } from "@multica/core/hooks/use-file-upload";
 import { api } from "@multica/core/api";
 import { FileUploadButton } from "@multica/ui/components/common/file-upload-button";
+import { Switch } from "@multica/ui/components/ui/switch";
 
 // ---------------------------------------------------------------------------
 // Pill trigger — shared rounded-full button style for toolbar
@@ -80,6 +81,8 @@ export function CreateIssueModal({ onClose, data }: { onClose: () => void; data?
   );
   const [isExpanded, setIsExpanded] = useState(false);
   const [backlogHintIssueId, setBacklogHintIssueId] = useState<string | null>(null);
+  const isSubIssue = !!(data?.parent_issue_id);
+  const [inheritParentWorkdir, setInheritParentWorkdir] = useState(true);
 
   // File upload — collect attachment IDs so we can link them after issue creation.
   const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
@@ -141,6 +144,7 @@ export function CreateIssueModal({ onClose, data }: { onClose: () => void; data?
         parent_issue_id: (data?.parent_issue_id as string) || undefined,
         project_id: projectId,
         pipeline_id: pipelineId,
+        ...(isSubIssue && { inherit_parent_workdir: inheritParentWorkdir }),
       });
       clearDraft();
       const shouldShowBacklogHint =
@@ -356,6 +360,32 @@ export function CreateIssueModal({ onClose, data }: { onClose: () => void; data?
                 triggerRender={<PillButton />}
                 align="start"
               />
+
+              {/* Inherit workdir — only for sub-issues */}
+              {isSubIssue && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <button
+                        type="button"
+                        onClick={() => setInheritParentWorkdir(!inheritParentWorkdir)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors cursor-pointer ${inheritParentWorkdir ? "bg-primary/10 border-primary/30 text-primary" : "hover:bg-accent/60"}`}
+                      >
+                        <Switch
+                          checked={inheritParentWorkdir}
+                          className="h-3 w-5 pointer-events-none"
+                        />
+                        Inherit workdir
+                      </button>
+                    }
+                  />
+                  <TooltipContent side="top">
+                    {inheritParentWorkdir
+                      ? "Subtask will reuse parent's working directory"
+                      : "Subtask will start in an isolated directory"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
 
             {/* Footer */}
