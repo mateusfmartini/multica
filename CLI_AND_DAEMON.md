@@ -267,6 +267,14 @@ multica workspace get <workspace-id> --output json
 multica workspace members <workspace-id>
 ```
 
+### Repository Checkout
+
+```bash
+multica repo checkout <url>
+```
+
+Checks out a workspace repository into the agent's working directory. Creates a git worktree with a dedicated branch. For local repos (absolute path), creates a symlink instead.
+
 ## Issues
 
 ### List Issues
