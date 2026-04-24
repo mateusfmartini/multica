@@ -850,6 +850,9 @@ func (h *Handler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		if req.ProjectID == nil {
 			projectID = parent.ProjectID
 		}
+		if req.PipelineID == nil {
+			pipelineID = parent.PipelineID
+		}
 	}
 
 	var dueDate pgtype.Timestamptz

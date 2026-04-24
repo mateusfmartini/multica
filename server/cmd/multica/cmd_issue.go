@@ -181,6 +181,7 @@ func init() {
 	issueCreateCmd.Flags().String("assignee", "", "Assignee name (member or agent)")
 	issueCreateCmd.Flags().String("parent", "", "Parent issue ID")
 	issueCreateCmd.Flags().String("project", "", "Project ID")
+	issueCreateCmd.Flags().String("pipeline", "", "Pipeline ID")
 	issueCreateCmd.Flags().String("due-date", "", "Due date (RFC3339 format)")
 	issueCreateCmd.Flags().String("output", "json", "Output format: table or json")
 	issueCreateCmd.Flags().StringSlice("attachment", nil, "File path(s) to attach (can be specified multiple times)")
@@ -192,6 +193,7 @@ func init() {
 	issueUpdateCmd.Flags().String("priority", "", "New priority")
 	issueUpdateCmd.Flags().String("assignee", "", "New assignee name (member or agent)")
 	issueUpdateCmd.Flags().String("project", "", "Project ID")
+	issueUpdateCmd.Flags().String("pipeline", "", "Pipeline ID")
 	issueUpdateCmd.Flags().String("due-date", "", "New due date (RFC3339 format)")
 	issueUpdateCmd.Flags().String("parent", "", "Parent issue ID (use --parent \"\" to clear)")
 	issueUpdateCmd.Flags().String("output", "json", "Output format: table or json")
@@ -412,6 +414,9 @@ func runIssueCreate(cmd *cobra.Command, _ []string) error {
 	if v, _ := cmd.Flags().GetString("project"); v != "" {
 		body["project_id"] = v
 	}
+	if v, _ := cmd.Flags().GetString("pipeline"); v != "" {
+		body["pipeline_id"] = v
+	}
 	if v, _ := cmd.Flags().GetString("due-date"); v != "" {
 		body["due_date"] = v
 	}
@@ -487,6 +492,10 @@ func runIssueUpdate(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("project") {
 		v, _ := cmd.Flags().GetString("project")
 		body["project_id"] = v
+	}
+	if cmd.Flags().Changed("pipeline") {
+		v, _ := cmd.Flags().GetString("pipeline")
+		body["pipeline_id"] = v
 	}
 	if cmd.Flags().Changed("due-date") {
 		v, _ := cmd.Flags().GetString("due-date")
