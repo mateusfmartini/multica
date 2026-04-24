@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { Workflow } from "lucide-react";
 import { usePipelines } from "@multica/core/pipeline";
-import { useIssueViewStore } from "@multica/core/issues/stores/view-store";
+import { useViewStore } from "@multica/core/issues/stores/view-store-context";
 import { PropertyPicker, PickerItem } from "./property-picker";
 
 export function PipelinePicker({ wsId }: { wsId: string }) {
   const [open, setOpen] = useState(false);
-  const activePipelineId = useIssueViewStore((s) => s.activePipelineId);
-  const setActivePipeline = useIssueViewStore((s) => s.setActivePipeline);
+  const activePipelineId = useViewStore((s) => s.activePipelineId);
+  const setActivePipeline = useViewStore((s) => s.setActivePipeline);
   const { data: pipelines = [] } = usePipelines(wsId);
 
   const activePipeline = pipelines.find((p) => p.id === activePipelineId);
