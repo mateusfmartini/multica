@@ -295,6 +295,16 @@ type WorktreeResult struct {
 	BranchName string `json:"branch_name"` // git branch created for this worktree
 }
 
+// localRepoBranch returns the current branch of a local git repo, or an empty
+// string if the branch cannot be determined (detached HEAD, not a git repo, etc.)
+func localRepoBranch(repoPath string) string {
+	out, err := exec.Command("git", "-C", repoPath, "symbolic-ref", "--short", "HEAD").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
 // createLocalSymlink handles checkout for local-path repos: creates a symlink
 // in the workdir pointing at the absolute local path. Idempotent on reuse.
 func (c *Cache) createLocalSymlink(params WorktreeParams) (*WorktreeResult, error) {
@@ -309,7 +319,7 @@ func (c *Cache) createLocalSymlink(params WorktreeParams) (*WorktreeResult, erro
 	if existing, err := os.Readlink(symlinkPath); err == nil {
 		if existing == localPath {
 			c.logger.Info("repo checkout: local symlink already exists", "path", localPath, "symlink", symlinkPath)
-			return &WorktreeResult{Path: symlinkPath, BranchName: ""}, nil
+			return &WorktreeResult{Path: symlinkPath, BranchName: localRepoBranch(localPath)}, nil
 		}
 		// Points somewhere else — remove and re-create.
 		if err := os.Remove(symlinkPath); err != nil {
@@ -323,8 +333,9 @@ func (c *Cache) createLocalSymlink(params WorktreeParams) (*WorktreeResult, erro
 		return nil, fmt.Errorf("create symlink: %w", err)
 	}
 
-	c.logger.Info("repo checkout: local symlink created", "path", localPath, "symlink", symlinkPath)
-	return &WorktreeResult{Path: symlinkPath, BranchName: ""}, nil
+	branch := localRepoBranch(localPath)
+	c.logger.Info("repo checkout: local symlink created", "path", localPath, "symlink", symlinkPath, "branch", branch)
+	return &WorktreeResult{Path: symlinkPath, BranchName: branch}, nil
 }
 
 // CreateWorktree looks up the bare cache for a repo, fetches latest, and creates
