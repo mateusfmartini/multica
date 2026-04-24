@@ -30,9 +30,17 @@ type ProjectResponse struct {
 	UpdatedAt   string  `json:"updated_at"`
 	IssueCount  int64   `json:"issue_count"`
 	DoneCount   int64   `json:"done_count"`
+	Repos       any     `json:"repos"`
 }
 
 func projectToResponse(p db.Project) ProjectResponse {
+	var repos any
+	if p.Repos != nil {
+		json.Unmarshal(p.Repos, &repos)
+	}
+	if repos == nil {
+		repos = []any{}
+	}
 	return ProjectResponse{
 		ID:          uuidToString(p.ID),
 		WorkspaceID: uuidToString(p.WorkspaceID),
@@ -45,6 +53,7 @@ func projectToResponse(p db.Project) ProjectResponse {
 		LeadID:      uuidToPtr(p.LeadID),
 		CreatedAt:   timestampToString(p.CreatedAt),
 		UpdatedAt:   timestampToString(p.UpdatedAt),
+		Repos:       repos,
 	}
 }
 
@@ -64,6 +73,7 @@ type CreateProjectRequest struct {
 	Priority    string  `json:"priority"`
 	LeadType    *string `json:"lead_type"`
 	LeadID      *string `json:"lead_id"`
+	Repos       any     `json:"repos"`
 }
 
 type UpdateProjectRequest struct {
@@ -74,6 +84,7 @@ type UpdateProjectRequest struct {
 	Priority    *string `json:"priority"`
 	LeadType    *string `json:"lead_type"`
 	LeadID      *string `json:"lead_id"`
+	Repos       any     `json:"repos"`
 }
 
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
@@ -168,6 +179,13 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	if req.LeadID != nil {
 		leadID = parseUUID(*req.LeadID)
 	}
+	var reposJSON []byte
+	if req.Repos != nil {
+		reposJSON, _ = json.Marshal(req.Repos)
+	}
+	if reposJSON == nil {
+		reposJSON = []byte("[]")
+	}
 	project, err := h.Queries.CreateProject(r.Context(), db.CreateProjectParams{
 		WorkspaceID: parseUUID(workspaceID),
 		Title:       req.Title,
@@ -177,6 +195,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		LeadType:    leadType,
 		LeadID:      leadID,
 		Priority:    priority,
+		Repos:       reposJSON,
 	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to create project")
@@ -220,6 +239,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		Icon:        prevProject.Icon,
 		LeadType:    prevProject.LeadType,
 		LeadID:      prevProject.LeadID,
+		Repos:       prevProject.Repos,
 	}
 	if req.Title != nil {
 		params.Title = pgtype.Text{String: *req.Title, Valid: true}
@@ -256,6 +276,14 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 			params.LeadID = parseUUID(*req.LeadID)
 		} else {
 			params.LeadID = pgtype.UUID{Valid: false}
+		}
+	}
+	if _, ok := rawFields["repos"]; ok {
+		if req.Repos != nil {
+			reposJSON, _ := json.Marshal(req.Repos)
+			params.Repos = reposJSON
+		} else {
+			params.Repos = []byte("[]")
 		}
 	}
 	project, err := h.Queries.UpdateProject(r.Context(), params)

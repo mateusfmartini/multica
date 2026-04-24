@@ -2,12 +2,13 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { useDefaultLayout, usePanelRef } from "react-resizable-panels";
-import { Check, ChevronRight, Link2, ListTodo, MoreHorizontal, PanelRight, Pin, PinOff, Trash2, UserMinus } from "lucide-react";
+import { Check, ChevronRight, Link2, ListTodo, MoreHorizontal, PanelRight, Pin, PinOff, Plus, Trash2, UserMinus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@multica/ui/lib/utils";
 import { toast } from "sonner";
 import type { Issue, ProjectStatus, ProjectPriority } from "@multica/core/types";
 import { useAuthStore } from "@multica/core/auth";
+import { Input } from "@multica/ui/components/ui/input";
 import { projectDetailOptions } from "@multica/core/projects/queries";
 import { useUpdateProject, useDeleteProject } from "@multica/core/projects/mutations";
 import { pinListOptions } from "@multica/core/pins";
@@ -207,6 +208,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const { getActorName } = useActorName();
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
+  const currentMember = members.find((m) => m.user_id === userId) ?? null;
+  const canManageWorkspace = currentMember?.role === "owner" || currentMember?.role === "admin";
   const { data: pinnedItems = [] } = useQuery({
     ...pinListOptions(wsId, userId ?? ""),
     enabled: !!userId,
@@ -221,6 +224,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [propertiesOpen, setPropertiesOpen] = useState(true);
   const [progressOpen, setProgressOpen] = useState(true);
   const [descriptionOpen, setDescriptionOpen] = useState(true);
+  const [reposOpen, setReposOpen] = useState(true);
 
   // Sidebar panel
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -491,6 +495,79 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             onUpdate={(md) => handleUpdateField({ description: md || null })}
             debounceMs={1500}
           />
+        </div>}
+      </div>
+
+      {/* Repositories */}
+      <div>
+        <button
+          className={`flex w-full items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors mb-2 hover:bg-accent/70 ${reposOpen ? "" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setReposOpen(!reposOpen)}
+        >
+          Repositories
+          <ChevronRight className={`!size-3 shrink-0 stroke-[2.5] text-muted-foreground transition-transform ${reposOpen ? "rotate-90" : ""}`} />
+        </button>
+        {reposOpen && <div className="pl-2 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Repositories linked to this project. Agents working on project issues will see these repos.
+          </p>
+          {(project.repos ?? []).map((repo, i) => (
+            <div key={i} className="flex items-start gap-1.5 group">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs truncate">{repo.url}</p>
+                {repo.description && (
+                  <p className="text-xs text-muted-foreground truncate">{repo.description}</p>
+                )}
+              </div>
+              {canManageWorkspace && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    const updated = [...(project.repos ?? [])];
+                    updated.splice(i, 1);
+                    handleUpdateField({ repos: updated });
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          ))}
+          {canManageWorkspace && (
+            <div className="flex items-center gap-1.5">
+              <Input
+                placeholder="https://github.com/org/repo"
+                className="text-xs h-7"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const target = e.target as HTMLInputElement;
+                    const val = target.value.trim();
+                    if (val) {
+                      handleUpdateField({ repos: [...(project.repos ?? []), { url: val, description: "" }] });
+                      target.value = "";
+                    }
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 h-7 w-7"
+                onClick={(e) => {
+                  const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                  const val = input?.value?.trim();
+                  if (val) {
+                    handleUpdateField({ repos: [...(project.repos ?? []), { url: val, description: "" }] });
+                    input.value = "";
+                  }
+                }}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>}
       </div>
     </div>

@@ -152,6 +152,21 @@ func normalizeWorkspaceRepos(repos []RepoData) []RepoData {
 	return normalized
 }
 
+func mergeRepos(workspaceRepos []RepoData, projectRepos []RepoData) []RepoData {
+	seen := make(map[string]struct{}, len(workspaceRepos))
+	merged := make([]RepoData, 0, len(workspaceRepos)+len(projectRepos))
+	for _, r := range workspaceRepos {
+		seen[r.URL] = struct{}{}
+		merged = append(merged, r)
+	}
+	for _, r := range projectRepos {
+		if _, exists := seen[r.URL]; !exists {
+			merged = append(merged, r)
+		}
+	}
+	return merged
+}
+
 func workspaceReposVersion(repos []RepoData) string {
 	urls := make([]string, 0, len(repos))
 	for _, repo := range repos {
@@ -660,6 +675,17 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 				var repos []RepoData
 				if json.Unmarshal(ws.Repos, &repos) == nil && len(repos) > 0 {
 					resp.Repos = repos
+				}
+			}
+
+			// If the issue belongs to a project, inject project-specific repos
+			// so the agent receives only the relevant repositories.
+			if issue.ProjectID.Valid {
+				if proj, err := h.Queries.GetProject(r.Context(), issue.ProjectID); err == nil && proj.Repos != nil {
+					var projectRepos []RepoData
+					if json.Unmarshal(proj.Repos, &projectRepos) == nil && len(projectRepos) > 0 {
+						resp.Repos = mergeRepos(resp.Repos, projectRepos)
+					}
 				}
 			}
 

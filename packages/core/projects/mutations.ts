@@ -33,10 +33,10 @@ export function useUpdateProject() {
       const prevList = qc.getQueryData<ListProjectsResponse>(projectKeys.list(wsId));
       const prevDetail = qc.getQueryData<Project>(projectKeys.detail(wsId, id));
       qc.setQueryData<ListProjectsResponse>(projectKeys.list(wsId), (old) =>
-        old ? { ...old, projects: old.projects.map((p) => (p.id === id ? { ...p, ...data } : p)) } : old,
+        old ? { ...old, projects: old.projects.map((p) => (p.id === id ? { ...p, ...data, repos: data.repos ?? p.repos } : p)) } : old,
       );
       qc.setQueryData<Project>(projectKeys.detail(wsId, id), (old) =>
-        old ? { ...old, ...data } : old,
+        old ? { ...old, ...data, repos: data.repos ?? old.repos } : old,
       );
       return { prevList, prevDetail, id };
     },

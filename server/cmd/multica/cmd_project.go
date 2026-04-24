@@ -58,6 +58,32 @@ var projectStatusCmd = &cobra.Command{
 	RunE:  runProjectStatus,
 }
 
+var projectRepoCmd = &cobra.Command{
+	Use:   "repo",
+	Short: "Manage project repositories",
+}
+
+var projectRepoListCmd = &cobra.Command{
+	Use:   "list <project-id>",
+	Short: "List repos linked to a project",
+	Args:  exactArgs(1),
+	RunE:  runProjectRepoList,
+}
+
+var projectRepoAddCmd = &cobra.Command{
+	Use:   "add <project-id> <url>",
+	Short: "Add a repository to a project",
+	Args:  exactArgs(2),
+	RunE:  runProjectRepoAdd,
+}
+
+var projectRepoRemoveCmd = &cobra.Command{
+	Use:   "remove <project-id> <url>",
+	Short: "Remove a repository from a project",
+	Args:  exactArgs(2),
+	RunE:  runProjectRepoRemove,
+}
+
 var validProjectStatuses = []string{
 	"planned", "in_progress", "paused", "completed", "cancelled",
 }
@@ -69,6 +95,10 @@ func init() {
 	projectCmd.AddCommand(projectUpdateCmd)
 	projectCmd.AddCommand(projectDeleteCmd)
 	projectCmd.AddCommand(projectStatusCmd)
+	projectCmd.AddCommand(projectRepoCmd)
+	projectRepoCmd.AddCommand(projectRepoListCmd)
+	projectRepoCmd.AddCommand(projectRepoAddCmd)
+	projectRepoCmd.AddCommand(projectRepoRemoveCmd)
 
 	// project list
 	projectListCmd.Flags().String("output", "table", "Output format: table or json")
@@ -98,6 +128,15 @@ func init() {
 
 	// project status
 	projectStatusCmd.Flags().String("output", "table", "Output format: table or json")
+
+	// project repo list
+	projectRepoListCmd.Flags().String("output", "table", "Output format: table or json")
+
+	// project repo add
+	projectRepoAddCmd.Flags().String("description", "", "Repository description")
+
+	// project repo remove
+	// no extra flags needed
 }
 
 // ---------------------------------------------------------------------------
@@ -359,6 +398,125 @@ func runProjectStatus(cmd *cobra.Command, args []string) error {
 	if output == "json" {
 		return cli.PrintJSON(os.Stdout, result)
 	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Project repo commands
+// ---------------------------------------------------------------------------
+
+func runProjectRepoList(cmd *cobra.Command, args []string) error {
+	client, err := newAPIClient(cmd)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	var project map[string]any
+	if err := client.GetJSON(ctx, "/api/projects/"+args[0], &project); err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+
+	repos, _ := project["repos"].([]any)
+	output, _ := cmd.Flags().GetString("output")
+	if output == "json" {
+		return cli.PrintJSON(os.Stdout, repos)
+	}
+
+	headers := []string{"URL", "DESCRIPTION"}
+	rows := make([][]string, 0, len(repos))
+	for _, raw := range repos {
+		r, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		rows = append(rows, []string{
+			strVal(r, "url"),
+			strVal(r, "description"),
+		})
+	}
+	cli.PrintTable(os.Stdout, headers, rows)
+	return nil
+}
+
+func runProjectRepoAdd(cmd *cobra.Command, args []string) error {
+	projectID := args[0]
+	repoURL := args[1]
+	description, _ := cmd.Flags().GetString("description")
+
+	client, err := newAPIClient(cmd)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	var project map[string]any
+	if err := client.GetJSON(ctx, "/api/projects/"+projectID, &project); err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+
+	repos, _ := project["repos"].([]any)
+	for _, raw := range repos {
+		if r, ok := raw.(map[string]any); ok && strVal(r, "url") == repoURL {
+			return fmt.Errorf("repository %s already linked to this project", repoURL)
+		}
+	}
+
+	newRepo := map[string]any{"url": repoURL, "description": description}
+	repos = append(repos, newRepo)
+
+	body := map[string]any{"repos": repos}
+	var result map[string]any
+	if err := client.PutJSON(ctx, "/api/projects/"+projectID, body, &result); err != nil {
+		return fmt.Errorf("update project repos: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Repository %s added to project %s.\n", repoURL, truncateID(projectID))
+	return nil
+}
+
+func runProjectRepoRemove(cmd *cobra.Command, args []string) error {
+	projectID := args[0]
+	repoURL := args[1]
+
+	client, err := newAPIClient(cmd)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	var project map[string]any
+	if err := client.GetJSON(ctx, "/api/projects/"+projectID, &project); err != nil {
+		return fmt.Errorf("get project: %w", err)
+	}
+
+	repos, _ := project["repos"].([]any)
+	filtered := make([]any, 0, len(repos))
+	found := false
+	for _, raw := range repos {
+		if r, ok := raw.(map[string]any); ok && strVal(r, "url") == repoURL {
+			found = true
+			continue
+		}
+		filtered = append(filtered, raw)
+	}
+	if !found {
+		return fmt.Errorf("repository %s not found in this project", repoURL)
+	}
+
+	body := map[string]any{"repos": filtered}
+	var result map[string]any
+	if err := client.PutJSON(ctx, "/api/projects/"+projectID, body, &result); err != nil {
+		return fmt.Errorf("update project repos: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Repository %s removed from project %s.\n", repoURL, truncateID(projectID))
 	return nil
 }
 

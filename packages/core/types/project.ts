@@ -1,3 +1,5 @@
+import type { WorkspaceRepo } from "./workspace";
+
 export type ProjectStatus = "planned" | "in_progress" | "paused" | "completed" | "cancelled";
 
 export type ProjectPriority = "urgent" | "high" | "medium" | "low" | "none";
@@ -16,6 +18,7 @@ export interface Project {
   updated_at: string;
   issue_count: number;
   done_count: number;
+  repos: WorkspaceRepo[];
 }
 
 export interface CreateProjectRequest {
@@ -26,6 +29,7 @@ export interface CreateProjectRequest {
   priority?: ProjectPriority;
   lead_type?: "member" | "agent";
   lead_id?: string;
+  repos?: WorkspaceRepo[];
 }
 
 export interface UpdateProjectRequest {
@@ -36,6 +40,7 @@ export interface UpdateProjectRequest {
   priority?: ProjectPriority;
   lead_type?: "member" | "agent" | null;
   lead_id?: string | null;
+  repos?: WorkspaceRepo[] | null;
 }
 
 export interface ListProjectsResponse {
