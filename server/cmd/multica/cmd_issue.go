@@ -15,6 +15,16 @@ import (
 	"github.com/multica-ai/multica/server/internal/cli"
 )
 
+var validIssueStatuses = []string{
+	"backlog",
+	"todo",
+	"in_progress",
+	"in_review",
+	"done",
+	"blocked",
+	"cancelled",
+}
+
 var issueCmd = &cobra.Command{
 	Use:   "issue",
 	Short: "Work with issues",
@@ -138,7 +148,6 @@ var issueSearchCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE:  runIssueSearch,
 }
-
 
 func init() {
 	issueCmd.AddCommand(issueListCmd)

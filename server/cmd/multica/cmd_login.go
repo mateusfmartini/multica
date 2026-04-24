@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,7 +34,7 @@ func tryResolveAppURL(cmd *cobra.Command) string {
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Authenticate and set up workspaces",
-	Long:  "Log in to Multica, then automatically discover and watch all your workspaces.",
+	Long:  "Log in to Multica, then automatically discover and configure your workspaces.",
 	RunE:  runLogin,
 }
 
@@ -48,7 +51,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 	// Auto-discover and watch all workspaces.
 	if err := autoWatchWorkspaces(cmd); err != nil {
 		fmt.Fprintf(os.Stderr, "\nCould not auto-configure workspaces: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Run 'multica workspace list' and 'multica workspace watch <id>' to set up manually.\n")
+		fmt.Fprintf(os.Stderr, "Run 'multica workspace list' and 'multica workspace switch <id>' to set up manually.\n")
 		return nil
 	}
 
@@ -64,19 +67,12 @@ func autoWatchWorkspaces(cmd *cobra.Command) error {
 	}
 
 	client := cli.NewAPIClient(serverURL, "", token)
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	var workspaces []struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	}
-	if err := client.GetJSON(ctx, "/api/workspaces", &workspaces); err != nil {
+	workspaces, err := listWorkspaces(client)
+	if err != nil {
 		return fmt.Errorf("list workspaces: %w", err)
 	}
 
 	if len(workspaces) == 0 {
-		var err error
 		workspaces, err = waitForWorkspaceCreation(cmd, client)
 		if err != nil {
 			return err
@@ -93,10 +89,11 @@ func autoWatchWorkspaces(cmd *cobra.Command) error {
 		return err
 	}
 
-	// Set default workspace if not set.
-	if cfg.WorkspaceID == "" {
-		cfg.WorkspaceID = workspaces[0].ID
+	selected, err := chooseDefaultWorkspace(workspaces, cfg.WorkspaceID, os.Stdin, os.Stderr, stdinLooksInteractive())
+	if err != nil {
+		return err
 	}
+	cfg.WorkspaceID = selected.ID
 
 	if err := cli.SaveCLIConfigForProfile(cfg, profile); err != nil {
 		return err
@@ -104,18 +101,24 @@ func autoWatchWorkspaces(cmd *cobra.Command) error {
 
 	fmt.Fprintf(os.Stderr, "\nFound %d workspace(s):\n", len(workspaces))
 	for _, ws := range workspaces {
-		fmt.Fprintf(os.Stderr, "  • %s (%s)\n", ws.Name, ws.ID)
+		marker := " "
+		if ws.ID == selected.ID {
+			marker = "*"
+		}
+		if ws.Slug != "" {
+			fmt.Fprintf(os.Stderr, " %s %s [%s] (%s)\n", marker, ws.Name, ws.Slug, ws.ID)
+			continue
+		}
+		fmt.Fprintf(os.Stderr, " %s %s (%s)\n", marker, ws.Name, ws.ID)
 	}
+	fmt.Fprintf(os.Stderr, "\nDefault workspace: %s (%s)\n", selected.Name, selected.ID)
 
 	return nil
 }
 
 // waitForWorkspaceCreation opens the web workspace-creation page and polls
 // until the user creates a workspace, returning the new workspace list.
-func waitForWorkspaceCreation(cmd *cobra.Command, client *cli.APIClient) ([]struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}, error) {
+func waitForWorkspaceCreation(cmd *cobra.Command, client *cli.APIClient) ([]workspaceSummary, error) {
 	appURL := tryResolveAppURL(cmd)
 	if appURL == "" {
 		// No app URL available (e.g. token login without prior setup).
@@ -143,10 +146,7 @@ func waitForWorkspaceCreation(cmd *cobra.Command, client *cli.APIClient) ([]stru
 		time.Sleep(pollInterval)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		var workspaces []struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-		}
+		var workspaces []workspaceSummary
 		err := client.GetJSON(ctx, "/api/workspaces", &workspaces)
 		cancel()
 
@@ -159,4 +159,62 @@ func waitForWorkspaceCreation(cmd *cobra.Command, client *cli.APIClient) ([]stru
 	}
 
 	return nil, fmt.Errorf("timed out waiting for workspace creation")
+}
+
+func chooseDefaultWorkspace(workspaces []workspaceSummary, currentID string, in io.Reader, out io.Writer, interactive bool) (workspaceSummary, error) {
+	if len(workspaces) == 0 {
+		return workspaceSummary{}, fmt.Errorf("no workspaces available")
+	}
+
+	defaultIdx := 0
+	for i, ws := range workspaces {
+		if ws.ID == currentID {
+			defaultIdx = i
+			break
+		}
+	}
+
+	if len(workspaces) == 1 || !interactive {
+		return workspaces[defaultIdx], nil
+	}
+
+	fmt.Fprintln(out, "\nSelect the default workspace for this CLI profile:")
+	for i, ws := range workspaces {
+		currentMarker := ""
+		if i == defaultIdx {
+			currentMarker = " (default)"
+		}
+		if ws.Slug != "" {
+			fmt.Fprintf(out, "  %d. %s [%s] (%s)%s\n", i+1, ws.Name, ws.Slug, ws.ID, currentMarker)
+			continue
+		}
+		fmt.Fprintf(out, "  %d. %s (%s)%s\n", i+1, ws.Name, ws.ID, currentMarker)
+	}
+
+	reader := bufio.NewReader(in)
+	for {
+		fmt.Fprintf(out, "Enter number [default %d]: ", defaultIdx+1)
+		answer, err := reader.ReadString('\n')
+		if err != nil && err != io.EOF {
+			return workspaceSummary{}, fmt.Errorf("read workspace selection: %w", err)
+		}
+		answer = strings.TrimSpace(answer)
+		if answer == "" {
+			return workspaces[defaultIdx], nil
+		}
+
+		n, convErr := strconv.Atoi(answer)
+		if convErr == nil && n >= 1 && n <= len(workspaces) {
+			return workspaces[n-1], nil
+		}
+		fmt.Fprintf(out, "Invalid selection %q. Enter a number between 1 and %d.\n", answer, len(workspaces))
+	}
+}
+
+func stdinLooksInteractive() bool {
+	info, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
 }

@@ -7,6 +7,12 @@ import (
 )
 
 func TestLegacyCompatibilityCommandsRemainAvailable(t *testing.T) {
+	t.Run("workspace create remains available", func(t *testing.T) {
+		if _, _, err := workspaceCmd.Find([]string{"create"}); err != nil {
+			t.Fatalf("expected workspace create command to exist: %v", err)
+		}
+	})
+
 	t.Run("workspace get remains available", func(t *testing.T) {
 		if _, _, err := workspaceCmd.Find([]string{"get"}); err != nil {
 			t.Fatalf("expected workspace get command to exist: %v", err)
@@ -16,6 +22,12 @@ func TestLegacyCompatibilityCommandsRemainAvailable(t *testing.T) {
 	t.Run("workspace members remains available", func(t *testing.T) {
 		if _, _, err := workspaceCmd.Find([]string{"members"}); err != nil {
 			t.Fatalf("expected workspace members command to exist: %v", err)
+		}
+	})
+
+	t.Run("workspace switch remains available", func(t *testing.T) {
+		if _, _, err := workspaceCmd.Find([]string{"switch"}); err != nil {
+			t.Fatalf("expected workspace switch command to exist: %v", err)
 		}
 	})
 
