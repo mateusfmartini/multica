@@ -226,17 +226,17 @@ daemon-linux-build:
 	@VERSION="$$(git describe --tags --always --dirty 2>/dev/null || echo dev)"; \
 	COMMIT="$$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"; \
 	DATE="$$(date -u '+%Y-%m-%dT%H:%M:%SZ')"; \
-	cd server && CGO_ENABLED=0 go build -ldflags "-X main.version=$$VERSION -X main.commit=$$COMMIT -X main.date=$$DATE" -o $(HOME)/.local/share/multica/dist/multica-linux ./cmd/multica; \
-	cp $(HOME)/.local/share/multica/dist/multica-linux $(HOME)/git/others/multica/dist/multica-linux; \
-	echo "Built Linux CLI to $(HOME)/.local/share/multica/dist/multica-linux ($$VERSION)"
+	cd server && CGO_ENABLED=0 go build -ldflags "-X main.version=$$VERSION -X main.commit=$$COMMIT -X main.date=$$DATE" -o $(HOME)/.local/share/multica/dist/linux/multica ./cmd/multica; \
+	cp $(HOME)/.local/share/multica/dist/linux/multica $(HOME)/git/others/multica/dist/linux/multica; \
+	echo "Built Linux CLI to $(HOME)/.local/share/multica/dist/linux/multica ($$VERSION)"
 
 daemon-windows-build:
 	mkdir -p $(HOME)/.local/share/multica/dist
 	@VERSION="$$(git describe --tags --always --dirty 2>/dev/null || echo dev)"; \
 	COMMIT="$$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"; \
 	DATE="$$(date -u '+%Y-%m-%dT%H:%M:%SZ')"; \
-	cd server && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.version=$$VERSION -X main.commit=$$COMMIT -X main.date=$$DATE" -o $(HOME)/.local/share/multica/dist/multica.exe ./cmd/multica; \
-	echo "Built Windows CLI to $(HOME)/.local/share/multica/dist/multica.exe ($$VERSION)"
+	cd server && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.version=$$VERSION -X main.commit=$$COMMIT -X main.date=$$DATE" -o $(HOME)/.local/share/multica/dist/windows/multica.exe ./cmd/multica; \
+	echo "Built Windows CLI to $(HOME)/.local/share/multica/dist/windows/multica.exe ($$VERSION)"
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
