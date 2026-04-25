@@ -234,6 +234,12 @@ export function BoardView({
     [],
   );
 
+  const handleDragCancel = useCallback(() => {
+    isDraggingRef.current = false;
+    setActiveIssue(null);
+    setColumns(buildColumns(issues, visibleStatuses, sortBy, sortDirection, showHiddenPerStatus, autoHideDays));
+  }, [issues, visibleStatuses, sortBy, sortDirection, showHiddenPerStatus, autoHideDays]);
+
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
       const { active, over } = event;
@@ -328,6 +334,7 @@ export function BoardView({
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div className="flex flex-1 min-h-0 gap-4 overflow-x-auto p-4">
         {visibleStatuses.map((status) => (
