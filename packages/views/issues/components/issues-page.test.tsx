@@ -213,6 +213,10 @@ vi.mock("@multica/core/modals", () => ({
 }));
 
 // Mock sonner toast
+vi.mock("@multica/core/issues/use-issue-active-task", () => ({
+  useIssueActiveTask: () => ({ isAgentRunning: false }),
+}));
+
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
 }));
