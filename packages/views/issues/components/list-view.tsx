@@ -191,7 +191,7 @@ function StatusAccordionItem({
             <StatusIcon status={status} isTerminal={isTerminal} className="h-3 w-3" inheritColor />
             {label ?? cfg.label}
           </span>
-          <span className="text-xs text-muted-foreground">{(total ?? 0) + hiddenCount}</span>
+          <span className="text-xs text-muted-foreground">{total ?? 0}</span>
         </Accordion.Trigger>
         <div className="pr-2">
           <Tooltip>
