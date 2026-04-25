@@ -81,7 +81,7 @@ export function BoardColumn({
                   {label}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {(totalCount ?? issueIds.length) + hiddenCount}
+                  {totalCount ?? (issueIds.length + hiddenCount)}
                 </span>
               </div>
 
