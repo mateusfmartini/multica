@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Zap, Play, Clock, Plus, Trash2, CheckCircle2, XCircle, Loader2, Pencil } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { autopilotDetailOptions, autopilotRunsOptions } from "@multica/core/autopilots/queries";
+import { projectListOptions } from "@multica/core/projects/queries";
 import {
   useUpdateAutopilot,
   useDeleteAutopilot,
@@ -156,16 +157,19 @@ function EditAutopilotDialog({
   onOpenChange,
   autopilot,
   agents,
+  projects,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  autopilot: { id: string; title: string; description?: string | null; assignee_id: string; priority: string; execution_mode: string; issue_title_template?: string | null };
+  autopilot: { id: string; title: string; description?: string | null; assignee_id: string; project_id?: string | null; priority: string; execution_mode: string; issue_title_template?: string | null };
   agents: { id: string; name: string; archived_at?: string | null }[];
+  projects: { id: string; title: string }[];
 }) {
   const updateAutopilot = useUpdateAutopilot();
   const [title, setTitle] = useState(autopilot.title);
   const [description, setDescription] = useState(autopilot.description ?? "");
   const [assigneeId, setAssigneeId] = useState(autopilot.assignee_id);
+  const [projectId, setProjectId] = useState(autopilot.project_id ?? null);
   const [priority, setPriority] = useState(autopilot.priority);
   const [executionMode, setExecutionMode] = useState(autopilot.execution_mode);
   const [submitting, setSubmitting] = useState(false);
@@ -177,6 +181,7 @@ function EditAutopilotDialog({
     setTitle(autopilot.title);
     setDescription(autopilot.description ?? "");
     setAssigneeId(autopilot.assignee_id);
+    setProjectId(autopilot.project_id ?? null);
     setPriority(autopilot.priority);
     setExecutionMode(autopilot.execution_mode);
   }, [autopilot]);
@@ -190,6 +195,7 @@ function EditAutopilotDialog({
         title: title.trim(),
         description: description.trim() || null,
         assignee_id: assigneeId,
+        project_id: projectId || null,
         priority,
         execution_mode: executionMode as "create_issue" | "run_only",
       });
@@ -270,21 +276,43 @@ function EditAutopilotDialog({
             </div>
           </div>
 
-          {/* Execution Mode */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Execution Mode</label>
-            <Select value={executionMode} onValueChange={(v) => v && setExecutionMode(v)}>
-              <SelectTrigger className="mt-1 w-full">
-                <SelectValue>
-                  {(value: string | null) => EXECUTION_MODE_OPTIONS.find((o) => o.value === value)?.label ?? "Create Issue"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {EXECUTION_MODE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Execution Mode + Project */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Execution Mode</label>
+              <Select value={executionMode} onValueChange={(v) => v && setExecutionMode(v)}>
+                <SelectTrigger className="mt-1 w-full">
+                  <SelectValue>
+                    {(value: string | null) => EXECUTION_MODE_OPTIONS.find((o) => o.value === value)?.label ?? "Create Issue"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {EXECUTION_MODE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Project</label>
+              <Select value={projectId || "none"} onValueChange={(v) => setProjectId(v === "none" ? null : v)}>
+                <SelectTrigger className="mt-1 w-full">
+                  <SelectValue>
+                    {(value: string | null) => {
+                      if (!value || value === "none") return "No project";
+                      const project = projects.find((p) => p.id === value);
+                      return project?.title ?? "Unknown Project";
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No project</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Actions */}
@@ -376,6 +404,7 @@ export function AutopilotDetailPage({ autopilotId }: { autopilotId: string }) {
   const { data, isLoading } = useQuery(autopilotDetailOptions(wsId, autopilotId));
   const { data: runs = [], isLoading: runsLoading } = useQuery(autopilotRunsOptions(wsId, autopilotId));
   const { data: agents = [] } = useQuery(agentListOptions(wsId));
+  const { data: projects = [] } = useQuery(projectListOptions(wsId));
   const updateAutopilot = useUpdateAutopilot();
   const deleteAutopilot = useDeleteAutopilot();
   const triggerAutopilot = useTriggerAutopilot();
@@ -518,6 +547,12 @@ export function AutopilotDetailPage({ autopilotId }: { autopilotId: string }) {
                   {autopilot.execution_mode === "create_issue" ? "Create Issue" : "Run Only"}
                 </div>
               </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Project</label>
+                <div className="mt-1">
+                  {autopilot.project_id ? projects.find((p) => p.id === autopilot.project_id)?.title ?? "Unknown Project" : "None"}
+                </div>
+              </div>
               {autopilot.description && (
                 <div className="col-span-2">
                   <label className="text-xs text-muted-foreground">Prompt</label>
@@ -592,6 +627,7 @@ export function AutopilotDetailPage({ autopilotId }: { autopilotId: string }) {
         onOpenChange={setEditDialogOpen}
         autopilot={autopilot}
         agents={agents}
+        projects={projects}
       />
     </div>
   );

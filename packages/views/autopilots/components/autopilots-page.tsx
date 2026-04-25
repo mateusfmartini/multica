@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Zap, Play, Pause, AlertCircle, Newspaper, GitPullRequest, Bug, BarChart3, Shield, FileSearch } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { autopilotListOptions } from "@multica/core/autopilots/queries";
+import { projectListOptions } from "@multica/core/projects/queries";
 import { useCreateAutopilot, useCreateAutopilotTrigger } from "@multica/core/autopilots/mutations";
 import { agentListOptions } from "@multica/core/workspace/queries";
 import { useWorkspaceId } from "@multica/core/hooks";
@@ -197,12 +198,14 @@ function CreateAutopilotDialog({
 }) {
   const wsId = useWorkspaceId();
   const { data: agents = [] } = useQuery(agentListOptions(wsId));
+  const { data: projects = [] } = useQuery(projectListOptions(wsId));
   const createAutopilot = useCreateAutopilot();
   const createTrigger = useCreateAutopilotTrigger();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [triggerConfig, setTriggerConfig] = useState<TriggerConfig>(getDefaultTriggerConfig);
   const [submitting, setSubmitting] = useState(false);
 
@@ -231,6 +234,7 @@ function CreateAutopilotDialog({
         title: title.trim(),
         description: description.trim() || undefined,
         assignee_id: assigneeId,
+        project_id: projectId || undefined,
         execution_mode: "create_issue",
       });
 
@@ -250,6 +254,7 @@ function CreateAutopilotDialog({
       setTitle("");
       setDescription("");
       setAssigneeId("");
+      setProjectId(null);
       setTriggerConfig(getDefaultTriggerConfig());
       toast.success("Autopilot created");
     } catch {
@@ -306,6 +311,30 @@ function CreateAutopilotDialog({
                 {activeAgents.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
                     {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Project */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Project (Optional)</label>
+            <Select value={projectId || "none"} onValueChange={(v) => setProjectId(v === "none" ? null : v)}>
+              <SelectTrigger className="mt-1 w-full">
+                <SelectValue>
+                  {(value: string | null) => {
+                    if (!value || value === "none") return "No project";
+                    const project = projects.find((p) => p.id === value);
+                    return project?.title ?? "Unknown Project";
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No project</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.title}
                   </SelectItem>
                 ))}
               </SelectContent>
