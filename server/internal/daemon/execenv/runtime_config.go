@@ -130,6 +130,11 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 			}
 			if repo.TargetBranch != "" {
 				fmt.Fprintf(&b, "⚠️ MANDATORY: You MUST commit ALL changes to `%s` on branch `%s`. Create the branch if it does not exist.\n", identifier, repo.TargetBranch)
+				sourceRef := repo.SourceBranch
+				if sourceRef == "" {
+					sourceRef = "the default branch"
+				}
+				fmt.Fprintf(&b, "⚠️ MANDATORY: After committing, open a pull request from `%s` to `%s` and post the PR link as a comment on the task.\n", repo.TargetBranch, sourceRef)
 			}
 		}
 		b.WriteString("\n")
