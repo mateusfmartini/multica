@@ -551,3 +551,34 @@ func (q *Queries) UpdateChatSessionTitle(ctx context.Context, arg UpdateChatSess
 	)
 	return i, err
 }
+
+const updateChatSessionRepos = `-- name: UpdateChatSessionRepos :one
+UPDATE chat_session SET selected_repo_urls = $2, updated_at = now()
+WHERE id = $1
+RETURNING id, workspace_id, agent_id, creator_id, title, session_id, work_dir, status, created_at, updated_at, unread_since, selected_repo_urls
+`
+
+type UpdateChatSessionReposParams struct {
+	ID               pgtype.UUID `json:"id"`
+	SelectedRepoUrls []string    `json:"selected_repo_urls"`
+}
+
+func (q *Queries) UpdateChatSessionRepos(ctx context.Context, arg UpdateChatSessionReposParams) (ChatSession, error) {
+	row := q.db.QueryRow(ctx, updateChatSessionRepos, arg.ID, arg.SelectedRepoUrls)
+	var i ChatSession
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.AgentID,
+		&i.CreatorID,
+		&i.Title,
+		&i.SessionID,
+		&i.WorkDir,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UnreadSince,
+		&i.SelectedRepoUrls,
+	)
+	return i, err
+}

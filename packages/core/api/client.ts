@@ -915,6 +915,13 @@ export class ApiClient {
     await this.fetch(`/api/chat/sessions/${id}`, { method: "DELETE" });
   }
 
+  async updateChatSessionRepos(sessionId: string, selectedRepoUrls: string[]): Promise<ChatSession> {
+    return this.fetch(`/api/chat/sessions/${sessionId}/repos`, {
+      method: "PATCH",
+      body: JSON.stringify({ selected_repo_urls: selectedRepoUrls }),
+    });
+  }
+
   async listChatMessages(sessionId: string): Promise<ChatMessage[]> {
     return this.fetch(`/api/chat/sessions/${sessionId}/messages`);
   }

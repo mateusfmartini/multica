@@ -28,7 +28,7 @@ import {
   pendingChatTaskOptions,
   chatKeys,
 } from "@multica/core/chat/queries";
-import { useCreateChatSession, useMarkChatSessionRead } from "@multica/core/chat/mutations";
+import { useCreateChatSession, useMarkChatSessionRead, useUpdateChatSessionRepos } from "@multica/core/chat/mutations";
 import { useChatStore } from "@multica/core/chat";
 import { ChatMessageList, ChatMessageSkeleton } from "./chat-message-list";
 import { ChatInput } from "./chat-input";
@@ -85,6 +85,7 @@ export function ChatWindow() {
   const qc = useQueryClient();
   const createSession = useCreateChatSession();
   const markRead = useMarkChatSessionRead();
+  const updateRepos = useUpdateChatSessionRepos();
 
   const currentMember = members.find((m) => m.user_id === user?.id);
   const memberRole = currentMember?.role;
@@ -222,6 +223,16 @@ export function ChatWindow() {
       setActiveSession,
       qc,
     ],
+  );
+
+  const handleRepoChange = useCallback(
+    (urls: string[]) => {
+      setSelectedRepoUrls(urls);
+      if (activeSessionId) {
+        updateRepos.mutate({ sessionId: activeSessionId, selectedRepoUrls: urls });
+      }
+    },
+    [activeSessionId, setSelectedRepoUrls, updateRepos],
   );
 
   const handleStop = useCallback(async () => {
@@ -418,7 +429,7 @@ export function ChatWindow() {
             <RepoMultiSelectDropdown
               repos={workspace?.repos ?? []}
               selectedUrls={selectedRepoUrls}
-              onChangeUrls={setSelectedRepoUrls}
+              onChangeUrls={handleRepoChange}
             />
           </div>
         }

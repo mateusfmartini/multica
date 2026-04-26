@@ -97,7 +97,11 @@ func buildMetaSkillContent(provider string, ctx TaskContextForEnv) string {
 	// Inject available repositories section.
 	if len(ctx.Repos) > 0 {
 		b.WriteString("## Repositories\n\n")
-		b.WriteString("The following code repositories are available in this workspace.\n")
+		if ctx.ChatSessionID != "" {
+			b.WriteString("The user has selected the following repositories for this chat session. Prioritize these when working with code.\n")
+		} else {
+			b.WriteString("The following code repositories are available in this workspace.\n")
+		}
 		b.WriteString("Use `multica repo checkout <identifier>` to check out a repository into your working directory.\n\n")
 		b.WriteString("| Identifier | Type | Description |\n")
 		b.WriteString("|------------|------|-------------|\n")

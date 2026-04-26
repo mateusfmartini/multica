@@ -166,6 +166,54 @@ func (h *Handler) GetChatSession(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, chatSessionToResponse(session))
 }
 
+type UpdateChatSessionReposRequest struct {
+	SelectedRepoURLs []string `json:"selected_repo_urls"`
+}
+
+func (h *Handler) UpdateChatSessionRepos(w http.ResponseWriter, r *http.Request) {
+	userID, ok := requireUserID(w, r)
+	if !ok {
+		return
+	}
+	workspaceID := ctxWorkspaceID(r.Context())
+	sessionID := chi.URLParam(r, "sessionId")
+
+	var req UpdateChatSessionReposRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	session, err := h.Queries.GetChatSessionInWorkspace(r.Context(), db.GetChatSessionInWorkspaceParams{
+		ID:          parseUUID(sessionID),
+		WorkspaceID: parseUUID(workspaceID),
+	})
+	if err != nil {
+		writeError(w, http.StatusNotFound, "chat session not found")
+		return
+	}
+	if uuidToString(session.CreatorID) != userID {
+		writeError(w, http.StatusForbidden, "not your chat session")
+		return
+	}
+
+	selectedRepoURLs := req.SelectedRepoURLs
+	if selectedRepoURLs == nil {
+		selectedRepoURLs = []string{}
+	}
+
+	updated, err := h.Queries.UpdateChatSessionRepos(r.Context(), db.UpdateChatSessionReposParams{
+		ID:               parseUUID(sessionID),
+		SelectedRepoUrls: selectedRepoURLs,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update session repos")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, chatSessionToResponse(updated))
+}
+
 func (h *Handler) ArchiveChatSession(w http.ResponseWriter, r *http.Request) {
 	userID, ok := requireUserID(w, r)
 	if !ok {

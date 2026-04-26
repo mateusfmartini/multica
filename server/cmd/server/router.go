@@ -383,6 +383,7 @@ func NewRouter(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus, analytics
 				r.Route("/{sessionId}", func(r chi.Router) {
 					r.Get("/", h.GetChatSession)
 					r.Delete("/", h.ArchiveChatSession)
+					r.Patch("/repos", h.UpdateChatSessionRepos)
 					r.Post("/messages", h.SendChatMessage)
 					r.Get("/messages", h.ListChatMessages)
 					r.Get("/pending-task", h.GetPendingChatTask)

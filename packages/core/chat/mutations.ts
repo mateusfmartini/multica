@@ -70,6 +70,28 @@ export function useMarkChatSessionRead() {
   });
 }
 
+export function useUpdateChatSessionRepos() {
+  const qc = useQueryClient();
+  const wsId = useWorkspaceId();
+
+  return useMutation({
+    mutationFn: ({ sessionId, selectedRepoUrls }: { sessionId: string; selectedRepoUrls: string[] }) => {
+      logger.info("updateChatSessionRepos.start", { sessionId });
+      return api.updateChatSessionRepos(sessionId, selectedRepoUrls);
+    },
+    onSuccess: (_data, { sessionId }) => {
+      logger.info("updateChatSessionRepos.success", { sessionId });
+    },
+    onError: (err) => {
+      logger.error("updateChatSessionRepos.error", err);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: chatKeys.sessions(wsId) });
+      qc.invalidateQueries({ queryKey: chatKeys.allSessions(wsId) });
+    },
+  });
+}
+
 export function useArchiveChatSession() {
   const qc = useQueryClient();
   const wsId = useWorkspaceId();
