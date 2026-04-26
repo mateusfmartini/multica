@@ -531,8 +531,8 @@ export function AutopilotDetailPage({ autopilotId }: { autopilotId: string }) {
   const { data: runs = [], isLoading: runsLoading } = useQuery({
     ...autopilotRunsOptions(wsId, autopilotId),
     refetchInterval: (query): number | false => {
-      const data = query.state.data as AutopilotRun[] | undefined;
-      return data?.some((r: AutopilotRun) => r.status === "running") ? 5000 : false;
+      const raw = query.state.data as { runs?: AutopilotRun[] } | undefined;
+      return raw?.runs?.some((r) => r.status === "running") ? 5000 : false;
     },
   });
   const { data: agents = [] } = useQuery(agentListOptions(wsId));
