@@ -806,6 +806,22 @@ func (h *Handler) ClaimTaskByRuntime(w http.ResponseWriter, r *http.Request) {
 			if ws, err := h.Queries.GetWorkspace(r.Context(), cs.WorkspaceID); err == nil && ws.Repos != nil {
 				var repos []RepoData
 				if json.Unmarshal(ws.Repos, &repos) == nil && len(repos) > 0 {
+					// Filter to selected repos when the session has a non-empty selection.
+					if len(cs.SelectedRepoUrls) > 0 {
+						selectedSet := make(map[string]struct{}, len(cs.SelectedRepoUrls))
+						for _, u := range cs.SelectedRepoUrls {
+							selectedSet[u] = struct{}{}
+						}
+						filtered := make([]RepoData, 0, len(cs.SelectedRepoUrls))
+						for _, r := range repos {
+							if _, ok := selectedSet[r.URL]; ok {
+								filtered = append(filtered, r)
+							}
+						}
+						if len(filtered) > 0 {
+							repos = filtered
+						}
+					}
 					resp.Repos = repos
 				}
 			}

@@ -638,7 +638,7 @@ function RepoMultiSelectDropdown({
             const url = repo.url ?? "";
             if (!url) return null;
             const isSelected = selectedUrls.includes(url);
-            const label = repo.description || url.split("/").pop() || url;
+            const label = url.split("/").pop()?.replace(/\.git$/, "") || repo.description || url;
             return (
               <DropdownMenuItem
                 key={url}
