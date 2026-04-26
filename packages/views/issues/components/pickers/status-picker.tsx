@@ -31,8 +31,13 @@ export function StatusPicker({
   const cfg = getStatusConfig(status);
   const displayLabel = pipelineColumns?.find((c) => c.status_key === status)?.label ?? cfg.label;
 
-  const items = pipelineColumns
+  const baseItems = pipelineColumns
     ?? ALL_STATUSES.map((s) => ({ status_key: s, label: getStatusConfig(s).label }));
+
+  const hasCancelled = baseItems.some((item) => item.status_key === "cancelled");
+  const items = hasCancelled
+    ? baseItems
+    : [...baseItems, { status_key: "cancelled", label: getStatusConfig("cancelled").label }];
 
   return (
     <PropertyPicker
