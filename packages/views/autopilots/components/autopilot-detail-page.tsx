@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Zap, Play, Clock, Plus, Trash2, CheckCircle2, XCircle, Loader2, Pencil, FileText } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Zap, Play, Clock, Plus, Trash2, CheckCircle2, XCircle, Loader2, Pencil, FileText, Square } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { autopilotDetailOptions, autopilotRunsOptions } from "@multica/core/autopilots/queries";
+import { autopilotDetailOptions, autopilotRunsOptions, autopilotKeys } from "@multica/core/autopilots/queries";
 import { projectListOptions, isOpenProject } from "@multica/core/projects/queries";
 import {
   useUpdateAutopilot,
@@ -79,14 +80,33 @@ const RUN_STATUS_CONFIG: Record<string, { label: string; color: string; icon: ty
   failed: { label: "Failed", color: "text-destructive", icon: XCircle },
 };
 
-function RunRow({ run, agentId }: { run: AutopilotRun; agentId: string }) {
+function RunRow({ run, agentId, autopilotId }: { run: AutopilotRun; agentId: string; autopilotId: string }) {
   const wsPaths = useWorkspacePaths();
+  const wsId = useWorkspaceId();
   const { getActorName } = useActorName();
+  const queryClient = useQueryClient();
   const cfg = (RUN_STATUS_CONFIG[run.status] ?? RUN_STATUS_CONFIG["issue_created"])!;
   const StatusIcon = cfg.icon;
   const [logOpen, setLogOpen] = useState(false);
   const [logItems, setLogItems] = useState<TimelineItem[] | null>(null);
   const [logLoading, setLogLoading] = useState(false);
+  const [stopping, setStopping] = useState(false);
+
+  const handleStop = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!run.task_id || stopping) return;
+    setStopping(true);
+    try {
+      await api.cancelTaskById(run.task_id);
+      await queryClient.invalidateQueries({ queryKey: autopilotKeys.runs(wsId, autopilotId) });
+      toast.success("Run cancelled");
+    } catch {
+      toast.error("Failed to cancel run");
+    } finally {
+      setStopping(false);
+    }
+  }, [run.task_id, stopping, queryClient, wsId, autopilotId]);
 
   const handleViewLog = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -140,6 +160,17 @@ function RunRow({ run, agentId }: { run: AutopilotRun; agentId: string }) {
           <span className="text-destructive">{run.failure_reason}</span>
         ) : null}
       </span>
+      {run.task_id && run.status === "running" && (
+        <button
+          onClick={handleStop}
+          disabled={stopping}
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 disabled:opacity-50"
+          title="Stop this run"
+        >
+          {stopping ? <Loader2 className="h-3 w-3 animate-spin" /> : <Square className="h-3 w-3" />}
+          <span>Stop</span>
+        </button>
+      )}
       {run.task_id && (
         <button
           onClick={handleViewLog}
@@ -685,7 +716,7 @@ export function AutopilotDetailPage({ autopilotId }: { autopilotId: string }) {
             ) : (
               <div className="rounded-md border overflow-hidden">
                 {runs.map((run) => (
-                  <RunRow key={run.id} run={run} agentId={autopilot.assignee_id} />
+                  <RunRow key={run.id} run={run} agentId={autopilot.assignee_id} autopilotId={autopilotId} />
                 ))}
               </div>
             )}
