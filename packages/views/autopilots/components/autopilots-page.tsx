@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, Zap, Play, Pause, AlertCircle, Newspaper, GitPullRequest, Bug, BarChart3, Shield, FileSearch } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { autopilotListOptions } from "@multica/core/autopilots/queries";
-import { projectListOptions } from "@multica/core/projects/queries";
+import { projectListOpenOptions } from "@multica/core/projects/queries";
 import { useCreateAutopilot, useCreateAutopilotTrigger, useTriggerAutopilot } from "@multica/core/autopilots/mutations";
 import { agentListOptions } from "@multica/core/workspace/queries";
 import { useWorkspaceId } from "@multica/core/hooks";
@@ -222,7 +222,7 @@ function CreateAutopilotDialog({
 }) {
   const wsId = useWorkspaceId();
   const { data: agents = [] } = useQuery(agentListOptions(wsId));
-  const { data: projects = [] } = useQuery(projectListOptions(wsId));
+  const { data: projects = [] } = useQuery(projectListOpenOptions(wsId));
   const createAutopilot = useCreateAutopilot();
   const createTrigger = useCreateAutopilotTrigger();
 
