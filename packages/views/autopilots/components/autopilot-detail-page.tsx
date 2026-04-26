@@ -651,8 +651,7 @@ export function AutopilotDetailPage({ autopilotId }: { autopilotId: string }) {
             <span className="hidden sm:inline">Edit</span>
           </Button>
           <Button size="sm" onClick={handleRunNow} disabled={autopilot.status !== "active" || triggerAutopilot.isPending}>
-            <Play className="h-3.5 w-3.5 mr-1" />
-            {triggerAutopilot.isPending ? "Running..." : "Run now"}
+            <Play className="h-3.5 w-3.5" />
           </Button>
         </div>
       </PageHeader>
