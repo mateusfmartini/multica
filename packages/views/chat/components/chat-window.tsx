@@ -641,10 +641,8 @@ function RepoMultiSelectDropdown({
           return (
             <DropdownMenuItem
               key={url}
-              onClick={(e) => {
-                e.preventDefault();
-                toggleRepo(url);
-              }}
+              closeOnClick={false}
+              onClick={() => toggleRepo(url)}
               className="flex items-center gap-2"
             >
               <Check className={`size-3.5 shrink-0 ${isSelected ? "text-foreground" : "text-transparent"}`} />
