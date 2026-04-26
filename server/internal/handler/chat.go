@@ -480,8 +480,18 @@ func (h *Handler) CancelTaskByUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		writeError(w, http.StatusNotFound, "task not found")
-		return
+		// Autopilot run_only tasks have no issue or chat session.
+		// Verify via the autopilot run that the autopilot belongs to the workspace.
+		apRun, err := h.Queries.GetAutopilotRunByTaskID(r.Context(), parseUUID(taskID))
+		if err != nil {
+			writeError(w, http.StatusNotFound, "task not found")
+			return
+		}
+		ap, err := h.Queries.GetAutopilot(r.Context(), apRun.AutopilotID)
+		if err != nil || uuidToString(ap.WorkspaceID) != workspaceID {
+			writeError(w, http.StatusNotFound, "task not found")
+			return
+		}
 	}
 
 	cancelled, err := h.TaskService.CancelTask(r.Context(), parseUUID(taskID))
