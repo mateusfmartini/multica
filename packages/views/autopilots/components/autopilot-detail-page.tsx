@@ -148,23 +148,13 @@ function RunRow({ run, agentId, autopilotId }: { run: AutopilotRun; agentId: str
     created_at: run.triggered_at,
   };
 
-  const content = (
-    <>
-      <StatusIcon className={cn("h-4 w-4 shrink-0", cfg.color, cfg.spin && "animate-spin")} />
-      <span className={cn("w-24 shrink-0 text-xs font-medium", cfg.color)}>{cfg.label}</span>
-      <span className="w-16 shrink-0 text-xs text-muted-foreground capitalize">{run.source}</span>
-      <span className="flex-1 min-w-0 text-xs text-muted-foreground truncate">
-        {run.issue_id ? (
-          "Issue linked"
-        ) : run.failure_reason ? (
-          <span className="text-destructive">{run.failure_reason}</span>
-        ) : null}
-      </span>
+  const actions = (
+    <div className="flex items-center gap-1 shrink-0">
       {run.task_id && run.status === "running" && (
         <button
           onClick={handleStop}
           disabled={stopping}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 disabled:opacity-50"
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
           title="Stop this run"
         >
           {stopping ? <Loader2 className="h-3 w-3 animate-spin" /> : <Square className="h-3 w-3" />}
@@ -175,20 +165,44 @@ function RunRow({ run, agentId, autopilotId }: { run: AutopilotRun; agentId: str
         <button
           onClick={handleViewLog}
           disabled={logLoading}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors shrink-0 disabled:opacity-50"
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-50"
           title="View execution log"
         >
           {logLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
           <span>Log</span>
         </button>
       )}
-      <span className="w-32 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-        {formatDate(run.triggered_at || run.created_at)}
-      </span>
-    </>
+    </div>
   );
 
-  const rowClass = "flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent/30 transition-colors";
+  const content = (
+    <div className="flex flex-col gap-0.5 min-w-0 flex-1 sm:flex-row sm:items-center sm:gap-3">
+      {/* Top row (always visible): status icon + label + actions */}
+      <div className="flex items-center gap-2 min-w-0">
+        <StatusIcon className={cn("h-4 w-4 shrink-0", cfg.color, cfg.spin && "animate-spin")} />
+        <span className={cn("shrink-0 text-xs font-medium", cfg.color)}>{cfg.label}</span>
+        <span className="hidden sm:inline shrink-0 text-xs text-muted-foreground capitalize">{run.source}</span>
+        <span className="flex-1 min-w-0 text-xs text-muted-foreground truncate">
+          {run.issue_id ? (
+            "Issue linked"
+          ) : run.failure_reason ? (
+            <span className="text-destructive truncate">{run.failure_reason}</span>
+          ) : null}
+        </span>
+        <div className="sm:hidden">{actions}</div>
+      </div>
+      {/* Bottom row on mobile: source + date */}
+      <div className="flex items-center justify-between gap-2 sm:contents">
+        <span className="sm:hidden text-xs text-muted-foreground capitalize">{run.source}</span>
+        <span className="sm:ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
+          {formatDate(run.triggered_at || run.created_at)}
+        </span>
+        <div className="hidden sm:flex">{actions}</div>
+      </div>
+    </div>
+  );
+
+  const rowClass = "flex items-start gap-3 px-4 py-2.5 text-sm hover:bg-accent/30 transition-colors";
 
   return (
     <>
