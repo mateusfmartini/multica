@@ -692,6 +692,8 @@ func registerNotificationListeners(bus *events.Bus, queries *db.Queries) {
 		detailsMap := map[string]any{
 			"autopilot_id": util.UUIDToString(autopilot.ID),
 			"run_id":       util.UUIDToString(run.ID),
+			"task_id":      taskID,
+			"agent_id":     util.UUIDToString(autopilot.AssigneeID),
 		}
 		if durationStr != "" {
 			detailsMap["duration"] = durationStr
